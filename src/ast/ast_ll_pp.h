@@ -51,5 +51,4 @@ inline std::ostream & operator<<(std::ostream & out, mk_bounded_pp const & p) {
     return out;
 }
 
-
-
+void dump(ast_manager & m, ast * n, unsigned depth = 3);
