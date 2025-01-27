@@ -22,6 +22,10 @@ Revision History:
 #include "ast/ast_ll_pp.h"
 #include "ast/ast_smt2_pp.h"
 
+#define RELAX_ITEPROP
+#define RELAX_ORPROP
+#define RELAX_ANDPROP
+
 namespace smt {
 
     void relevancy_eh::mark_as_relevant(relevancy_propagator & rp, expr * n) {
@@ -375,8 +379,15 @@ namespace smt {
                 propagate_relevant_app(n);
                 break;
             case l_undef:
+#ifdef RELAX_ORPROP
+                propagate_relevant_app(n);
+#endif
                 break;
             case l_true: {
+#ifdef RELAX_ORPROP
+                propagate_relevant_app(n);
+                break;
+#endif
                 expr * true_arg = nullptr;
                 for (expr* arg : *n) {
                     if (m_context.find_assignment(arg) == l_true) {
@@ -399,6 +410,11 @@ namespace smt {
             lbool val    = m_context.find_assignment(n);
             switch (val) {
             case l_false: {
+
+#ifdef RELAX_ANDPROP
+                propagate_relevant_app(n);
+                break;
+#endif
                 expr * false_arg = nullptr;
                 for (expr* arg : *n) {
                     if (m_context.find_assignment(arg) == l_false) {
@@ -413,6 +429,9 @@ namespace smt {
                 break;
             }
             case l_undef:
+#ifdef RELAX_ANDPROP
+                propagate_relevant_app(n);
+#endif
                 break;
             case l_true:
                 propagate_relevant_app(n);
@@ -426,6 +445,10 @@ namespace smt {
         void propagate_relevant_ite(app * n) {
             TRACE("propagate_relevant_ite", tout << "propagating relevancy for #" << n->get_id() << "\n" << mk_pp(n, get_manager()) << "\n";);
             mark_as_relevant(n->get_arg(0));
+#ifdef RELAX_ITEPROP
+            mark_as_relevant(n->get_arg(1));
+            mark_as_relevant(n->get_arg(2));
+#else
             switch (m_context.find_assignment(n->get_arg(0))) {
             case l_false:
                 TRACE("propagate_relevant_ite", tout << "marking as relevant: " << mk_pp(n->get_arg(2), get_manager()) << "\n";);
@@ -439,6 +462,7 @@ namespace smt {
                 mark_as_relevant(n->get_arg(1));
                 break;
             }
+#endif // RELAX_ITEPROP
         }
         
         /**
@@ -654,6 +678,10 @@ namespace smt {
         if (!rp.is_relevant(m_parent))
             return;
         rp.mark_as_relevant(m_parent->get_arg(0));
+#ifdef RELAX_ITEPROP
+        rp.mark_as_relevant(m_then_eq);
+        rp.mark_as_relevant(m_else_eq);
+#else
         switch (rp.get_context().get_assignment(m_parent->get_arg(0))) {
         case l_false:
             TRACE("ite_term_relevancy", tout << "marking else: #" << m_else_eq->get_id() << "\n";);
@@ -666,6 +694,7 @@ namespace smt {
             rp.mark_as_relevant(m_then_eq);
             break;
         }
+#endif
     }
 
     relevancy_propagator * mk_relevancy_propagator(context & ctx) { return alloc(relevancy_propagator_imp, ctx); }
