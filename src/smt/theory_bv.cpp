@@ -428,7 +428,7 @@ namespace smt {
 
     };
 
-    void theory_bv::add_fixed_eq(theory_var v1, theory_var v2) {
+    void theory_bv::add_fixed_eq(theory_var v1, theory_var v2) { 
 
         if (v1 > v2) 
             std::swap(v1, v2);
@@ -437,6 +437,18 @@ namespace smt {
         if ((act & 0xFF) != 0xFF) {
             return;
         }
+
+        // std::cerr << "act: " << act << std::endl;
+        // if ((act & 0xFF) != 0xCC 
+        // // &&
+        // //     (act & 0xFF) != 0xDF &&
+        // //     (act & 0xFF) != 0xDF
+
+        // ) {
+        //     return;
+        // }
+        // // return;
+
         ++m_stats.m_num_eq_dynamic;
         app* o1 = get_enode(v1)->get_expr();
         app* o2 = get_enode(v2)->get_expr();
