@@ -295,6 +295,10 @@ namespace smt {
         TRACE("phase_selection", tout << "saving phase, is_pos: " << d.m_phase << " l: " << l << "\n";);
 
         if (d.is_atom() && (relevancy_lvl() == 0 || (relevancy_lvl() == 1 && !d.is_quantifier()) || is_relevant_core(l))) {
+            if (m.has_trace_stream()) {
+                m.trace_stream() << "[assign-core-propq] " << bool_var2expr(l.var())->get_id() << " " \
+                   /* << mk_pp(bool_var2expr(l.var()), m) */ << "\n";
+            }
             m_atom_propagation_queue.push_back(l);
         }
 
@@ -2282,6 +2286,12 @@ namespace smt {
                     cls->m_reinternalize_atoms = false;
                     continue;
                 }
+                std::cerr << "reinit_clauses: " << cls->get_num_literals() << std::endl;
+
+                // for (unsigned j = 0; j < cls->get_num_literals(); j++) {
+                //     std::cerr << "reinit_clauses: #" <<  bool_var2expr(cls->get_literal(j).var())->get_id() << std::endl;
+                // }
+
                 SASSERT(cls->in_reinit_stack());
                 bool keep = false;
                 if (cls->reinternalize_atoms()) {
@@ -2305,6 +2315,7 @@ namespace smt {
                     (void)ilvl;
                     for (unsigned j = 0; j < num; j++) {
                         expr * atom     = cls->get_atom(j);
+                        std::cerr << "reinit_clauses: #" <<  atom->get_id() << std::endl;
                         bool   sign     = cls->get_atom_sign(j);
                         // Atom can be (NOT foo). This can happen, for example, when
                         // the NOT-application is a child of an uninterpreted function symbol.
@@ -2321,8 +2332,8 @@ namespace smt {
                         });
                         literal l(v, sign);
                         cls->set_literal(j, l);
-                        if (cls->get_kind() == CLS_TH_LEMMA)
-                            mark_as_relevant(l);
+                        // if (cls->get_kind() == CLS_TH_LEMMA || cls->get_kind() == CLS_LEARNED)
+                        mark_as_relevant(l);
                     }
                     SASSERT(ilvl <= m_scope_lvl);
                     int w1_idx = select_watch_lit(cls, 0);
@@ -2349,12 +2360,17 @@ namespace smt {
                 }
                 else {
                     SASSERT(!cls->reinternalize_atoms());
+
+                    for (unsigned j = 0; j < cls->get_num_literals(); j++) {
+                        std::cerr << "reinit_clauses (!reintern): #" <<  bool_var2expr(cls->get_literal(j).var())->get_id() << std::endl;
+                    }
+
                     literal l1 = cls->get_literal(0);
                     literal l2 = cls->get_literal(1);
-                    if (cls->get_kind() == CLS_TH_LEMMA) {
+                    // if (cls->get_kind() == CLS_TH_LEMMA || cls->get_kind() == CLS_LEARNED) {
                         mark_as_relevant(l1);
                         mark_as_relevant(l2);
-                    }
+                    // }
                     if (get_assignment(l1) == l_false && is_empty_clause(cls)) {
                         set_conflict(b_justification(cls));
                         keep = true;
