@@ -535,7 +535,8 @@ namespace smt {
                 // the state of the theory of arithmetic, but the conflict was not detected
                 // because it was not propagated to this theory.
                 ctx.mark_as_relevant(l_ante);
-                ctx.add_rel_watch(~l_ante, s_conseq); // mark consequent as relevant if antecedent is false.
+                ctx.mark_as_relevant(l_conseq);
+                // ctx.add_rel_watch(~l_ante, s_conseq); // mark consequent as relevant if antecedent is false.
             }
         }
     }

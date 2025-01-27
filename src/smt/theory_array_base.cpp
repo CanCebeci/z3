@@ -201,8 +201,9 @@ namespace smt {
 
             literal ante = mk_eq(idx1->get_expr(), idx2->get_expr(), true);
             ctx.mark_as_relevant(ante);
+            ctx.mark_as_relevant(conseq);
             // ctx.force_phase(ante);
-            ctx.add_rel_watch(~ante, conseq_expr);
+            // ctx.add_rel_watch(~ante, conseq_expr);
             // ctx.mark_as_relevant(conseq_expr);
             TRACE("array", tout << "asserting axiom2: " << ante << "\n";);
             TRACE("array_map_bug", tout << "axiom2:\n";
