@@ -453,6 +453,8 @@ namespace smt {
         app* o1 = get_enode(v1)->get_expr();
         app* o2 = get_enode(v2)->get_expr();
         literal oeq = mk_eq(o1, o2, true);
+        ctx.mark_as_relevant(oeq);
+
         unsigned sz = get_bv_size(v1);
         TRACE("bv", 
               tout << mk_pp(o1, m) << " = " << mk_pp(o2, m) << " " 
@@ -465,6 +467,8 @@ namespace smt {
             e1 = mk_bit2bool(o1, i);
             e2 = mk_bit2bool(o2, i);
             literal eq = mk_eq(e1, e2, true);
+            // should eq be marked as relevant as well?
+
             std::function<expr*()> logfn = [&]() {
                 return m.mk_implies(m.mk_not(ctx.bool_var2expr(eq.var())), m.mk_not(ctx.bool_var2expr(oeq.var())));
             };
