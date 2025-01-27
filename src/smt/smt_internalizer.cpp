@@ -1440,23 +1440,23 @@ namespace smt {
             return nullptr;
         }
         case 2:
-            if (use_binary_clause_opt(lits[0], lits[1], lemma)) {
-                literal l1 = lits[0];
-                literal l2 = lits[1];
-                inc_ref(l1);
-                inc_ref(l2);
-                m_watches[(~l1).index()].insert_literal(l2);
-                m_watches[(~l2).index()].insert_literal(l1);
-                if (get_assignment(l1) == l_false) {
-                    assign(l2, b_justification(~l1));
-                }
-                else if (get_assignment(l2) == l_false) {
-                    assign(l1, b_justification(~l2));
-                }
-                m_clause_proof.add(l1, l2, k, j, &simp_lits);
-                m_stats.m_num_mk_bin_clause++;
-                return nullptr;
-            }
+            // if (use_binary_clause_opt(lits[0], lits[1], lemma)) {
+            //     literal l1 = lits[0];
+            //     literal l2 = lits[1];
+            //     inc_ref(l1);
+            //     inc_ref(l2);
+            //     m_watches[(~l1).index()].insert_literal(l2);
+            //     m_watches[(~l2).index()].insert_literal(l1);
+            //     if (get_assignment(l1) == l_false) {
+            //         assign(l2, b_justification(~l1));
+            //     }
+            //     else if (get_assignment(l2) == l_false) {
+            //         assign(l1, b_justification(~l2));
+            //     }
+            //     m_clause_proof.add(l1, l2, k, j, &simp_lits);
+            //     m_stats.m_num_mk_bin_clause++;
+            //     return nullptr;
+            // }
             Z3_fallthrough;
         default: {
             m_stats.m_num_mk_clause++;
