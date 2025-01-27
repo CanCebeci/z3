@@ -78,16 +78,27 @@ namespace {
         }
             
         void activity_increased_eh(bool_var v) override {
-            if (m_queue.contains(v))
-                m_queue.decreased(v);
+            // if (v == 702 || v == 703) {
+            //     std::cerr << "activity_increased_eh: " << v << " " << m_context.get_activity(v) << "\n";
+            // }
+
+            // if (m_queue.contains(v))
+            //     m_queue.decreased(v);
         }
 
         void activity_decreased_eh(bool_var v) override {
-            if (m_queue.contains(v))
-                m_queue.increased(v);
+            // if (v == 702 || v == 703) {
+            //     std::cerr << "activity_decreased_eh: " << v << " " << m_context.get_activity(v) << "\n";
+            // }
+            // if (m_queue.contains(v))
+            //     m_queue.increased(v);
         }
 
         void mk_var_eh(bool_var v) override {
+                if (m_context.get_manager().has_trace_stream()) {
+                    m_context.get_manager().trace_stream() << "mk_var_eh: " << v << " " << m_context.get_activity(v) << " " << (m_queue.empty() ? 0 : m_queue.min_value()) << "\n";
+                    // display(m_context.get_manager().trace_stream());
+                }
             m_queue.reserve(v+1);
             SASSERT(!m_queue.contains(v));
             m_queue.insert(v);
@@ -99,6 +110,10 @@ namespace {
         }
 
         void unassign_var_eh(bool_var v) override {
+            if (m_context.get_manager().has_trace_stream()) {
+                m_context.get_manager().trace_stream() << "unassign_var_eh: " << v << " " << m_context.get_activity(v) << " " << (m_queue.empty() ? 0 : m_queue.min_value()) <<"\n";
+                // display(m_context.get_manager().trace_stream());
+            }
             if (!m_queue.contains(v))
                 m_queue.insert(v);
         }
@@ -165,22 +180,26 @@ namespace {
         }
 
         void activity_increased_eh(bool_var v) override {
-            act_case_split_queue::activity_increased_eh(v);
-            if (m_queue.contains(v))
-                m_queue.decreased(v);
-            if (m_delayed_queue.contains(v))
-                m_delayed_queue.decreased(v);
+            // act_case_split_queue::activity_increased_eh(v);
+            // if (m_queue.contains(v))
+            //     m_queue.decreased(v);
+            // if (m_delayed_queue.contains(v))
+            //     m_delayed_queue.decreased(v);
         }
 
         void activity_decreased_eh(bool_var v) override {
-            act_case_split_queue::activity_decreased_eh(v);
-            if (m_queue.contains(v))
-                m_queue.increased(v);
-            if (m_delayed_queue.contains(v))
-                m_delayed_queue.increased(v);
+            // act_case_split_queue::activity_decreased_eh(v);
+            // if (m_queue.contains(v))
+            //     m_queue.increased(v);
+            // if (m_delayed_queue.contains(v))
+            //     m_delayed_queue.increased(v);
         }
 
         void mk_var_eh(bool_var v) override {
+            if (m_context.get_manager().has_trace_stream()) {
+                    m_context.get_manager().trace_stream() << "dact_mk_var_eh: " << v << " " << m_context.get_activity(v) << " " << (m_queue.empty() ? 0 : m_queue.min_value()) << "\n";
+                    // display(m_context.get_manager().trace_stream());
+            }
             m_queue.reserve(v+1);
             m_delayed_queue.reserve(v+1);
             SASSERT(!m_delayed_queue.contains(v));
