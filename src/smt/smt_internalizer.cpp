@@ -946,9 +946,9 @@ namespace smt {
         bool_var_data & data = m_bdata[v];
         unsigned iscope_lvl = m_scope_lvl; // record when the boolean variable was internalized.
         data.init(iscope_lvl); 
-        if (m_fparams.m_random_initial_activity == IA_RANDOM || (m_fparams.m_random_initial_activity == IA_RANDOM_WHEN_SEARCHING && m_searching))
-            m_activity[v]      = -((m_random() % 1000) / 1000.0); 
-        else
+        // if (m_fparams.m_random_initial_activity == IA_RANDOM || (m_fparams.m_random_initial_activity == IA_RANDOM_WHEN_SEARCHING && m_searching))
+        //     m_activity[v]      = -((m_random() % 1000) / 1000.0); 
+        // else
             m_activity[v]      = 0.0;
         m_case_split_queue->mk_var_eh(v);
         m_b_internalized_stack.push_back(n);

@@ -120,12 +120,12 @@ namespace {
         void next_case_split(bool_var & next, lbool & phase) override {
             phase = l_undef;
             
-            if (m_context.get_random_value() < static_cast<int>(m_params.m_random_var_freq * random_gen::max_value())) {
-                next = m_context.get_random_value() % m_context.get_num_b_internalized(); 
-                TRACE("random_split", tout << "next: " << next << " get_assignment(next): " << m_context.get_assignment(next) << "\n";);
-                if (m_context.get_assignment(next) == l_undef)
-                    return;
-            }
+            // if (m_context.get_random_value() < static_cast<int>(m_params.m_random_var_freq * random_gen::max_value())) {
+            //     next = m_context.get_random_value() % m_context.get_num_b_internalized(); 
+            //     TRACE("random_split", tout << "next: " << next << " get_assignment(next): " << m_context.get_assignment(next) << "\n";);
+            //     if (m_context.get_assignment(next) == l_undef)
+            //         return;
+            // }
             
             while (!m_queue.empty()) {
                 next = m_queue.erase_min();
@@ -165,19 +165,19 @@ namespace {
         }
 
         void activity_increased_eh(bool_var v) override {
-            act_case_split_queue::activity_increased_eh(v);
-            if (m_queue.contains(v))
-                m_queue.decreased(v);
-            if (m_delayed_queue.contains(v))
-                m_delayed_queue.decreased(v);
+            // act_case_split_queue::activity_increased_eh(v);
+            // if (m_queue.contains(v))
+            //     m_queue.decreased(v);
+            // if (m_delayed_queue.contains(v))
+            //     m_delayed_queue.decreased(v);
         }
 
         void activity_decreased_eh(bool_var v) override {
-            act_case_split_queue::activity_decreased_eh(v);
-            if (m_queue.contains(v))
-                m_queue.increased(v);
-            if (m_delayed_queue.contains(v))
-                m_delayed_queue.increased(v);
+            // act_case_split_queue::activity_decreased_eh(v);
+            // if (m_queue.contains(v))
+            //     m_queue.increased(v);
+            // if (m_delayed_queue.contains(v))
+            //     m_delayed_queue.increased(v);
         }
 
         void mk_var_eh(bool_var v) override {
@@ -185,10 +185,26 @@ namespace {
             m_delayed_queue.reserve(v+1);
             SASSERT(!m_delayed_queue.contains(v));
             SASSERT(!m_queue.contains(v));
-            if (m_context.is_searching()) 
-                m_delayed_queue.insert(v);
+            if (m_context.is_searching()) {
+
+                m_delayed_queue.insert(v); 
+                // std::cerr << "inserted " << v;
+                // bool first = true;
+                // for (unsigned v : m_delayed_queue) {
+                //     if (m_context.get_assignment(v) == l_undef) {
+                //         if (first) {
+                //             std::cerr << "remaining case-splits:\n";
+                //             first = false;
+                //         }
+                //         std::cerr << "#" << m_context.bool_var2expr(v)->get_id() << " ";
+                //     }
+                // }
+                // if (!first)
+                //     std::cerr << "\n";         
+            }
             else
                 m_queue.insert(v);
+
         }
 
         void del_var_eh(bool_var v) override {
