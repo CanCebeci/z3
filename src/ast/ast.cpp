@@ -32,6 +32,8 @@ Revision History:
 #include "util/z3_version.h"
 #include <iostream>
 
+#include <signal.h>
+
 
 // -----------------------------------
 //
@@ -2181,6 +2183,25 @@ app * ast_manager::mk_app_core(func_decl * decl, unsigned num_args, expr * const
                     *m_trace_stream << " #" << r->get_arg(i)->get_id();
                 *m_trace_stream << "\n";
             }
+
+            // if (r->get_id() == 5276 &&  r->get_num_args()>0 && r->get_arg(0)->get_id() == 3359) {
+            //     raise(SIGINT);
+            // }
+
+            // #5223 or #2810 #5096 #5275
+            // if (r->get_id() == 5223 &&  r->get_num_args()>2 && r->get_arg(0)->get_id() == 2810 && r->get_arg(1)->get_id() == 5096 && r->get_arg(2)->get_id() == 5275) {
+            //     raise(SIGINT);
+            // }
+
+            // [mk-app] #5242 >= #5243 #139
+            // if (r->get_id() == 5242 &&  r->get_num_args()>1 && r->get_arg(0)->get_id() == 5243 && r->get_arg(1)->get_id() == 139) {
+            //     raise(SIGINT);
+            // }
+            
+            // [mk-app] #5348 = #769 #1002
+            // if (r->get_id() == 5348 &&  r->get_num_args()>1 && r->get_arg(0)->get_id() == 769 && r->get_arg(1)->get_id() == 1002) {
+            //     raise(SIGINT);
+            // }
         }
     }
     catch (...) {

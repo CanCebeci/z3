@@ -25,6 +25,8 @@ Revision History:
 #include <thread>
 #endif
 
+#include <signal.h>
+
 namespace smt {
 
 
@@ -679,6 +681,35 @@ namespace smt {
     }
 
     void context::trace_assign(literal l, b_justification j, bool decision) const {
+        // if (bool_var2expr(l.var())->get_id() == 5052 && l.sign()) {
+        //     raise(SIGINT);
+        // }
+
+        // if (bool_var2expr(l.var())->get_id() == 4769 && l.sign()) {
+        //     if (j.get_kind() == b_justification::JUSTIFICATION &&
+        //         j.get_justification()->get_from_theory() == 8) {
+        //         literal_vector lits;
+        //         const_cast<conflict_resolution&>(*m_conflict_resolution).justification2literals(j.get_justification(), lits);
+        //         if (lits.size() == 2 && lits[0].var() == 300 && lits[0].sign() && 
+        //             lits[1].var() == 3356 && !lits[1].sign()) {
+        //             raise(SIGINT);
+        //         }
+        //     }
+        // }
+
+        // if (bool_var2expr(l.var())->get_id() == 5348 && !l.sign()) {
+        //     if (j.get_kind() == b_justification::JUSTIFICATION 
+        //     // &&
+        //     //     j.get_justification()->get_from_theory() == -1
+        //         ) {
+        //         literal_vector lits;
+        //         const_cast<conflict_resolution&>(*m_conflict_resolution).justification2literals(j.get_justification(), lits);
+        //         if (lits.size() > 1 && lits[0].var() == 3359 ) {
+        //             raise(SIGINT);
+        //         }
+        //     }
+        // }
+
         SASSERT(m.has_trace_stream());
         std::ostream & out = m.trace_stream();
         ast_manager::suspend_trace _st(m);

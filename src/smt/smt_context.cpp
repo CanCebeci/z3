@@ -46,6 +46,7 @@ Revision History:
 #include "smt/smt_arith_value.h"
 #include <iostream>
 
+#include <signal.h>
 namespace smt {
 
     context::context(ast_manager & m, smt_params & p, params_ref const & _p):
@@ -294,6 +295,10 @@ namespace smt {
               );
         TRACE("phase_selection", tout << "saving phase, is_pos: " << d.m_phase << " l: " << l << "\n";);
 
+        // if (l.index() == 6712 &&  bool_var2expr(l.var())->get_id() == 5348) {
+        //     raise(SIGINT);
+        // }
+
         if (d.is_atom() && (relevancy_lvl() == 0 || (relevancy_lvl() == 1 && !d.is_quantifier()) || is_relevant_core(l))) {
             if (m.has_trace_stream()) {
                 m.trace_stream() << "[assign-core-propq] " << bool_var2expr(l.var())->get_id() << " " \
@@ -537,6 +542,19 @@ namespace smt {
 
 
             merge_theory_vars(n2, n1, js);
+
+            // if (n1->get_owner_id() == 769 && n2->get_owner_id() == 1002) {
+            //     if (m.trace_stream()) {
+            //         m.trace_stream() << "merge " << mk_bounded_pp(n1->get_expr(), m) << " " << mk_bounded_pp(n2->get_expr(), m);
+            //         m.trace_stream() << " kind: " << js.get_kind();
+            //         // if (js.get_kind() == eq_justifcation::JUSTIFICATION) {
+            //         //     m.trace_stream() << " ";
+            //         //     display_compact_j(m.trace_stream(), js);
+            //         // }
+            //         // display_compact_j(m.trace_stream(), js);
+            //         m.trace_stream() << "\n";
+            //     }
+            // }
 
             // 'Proof' tree
             // n1 -> ... -> r1
