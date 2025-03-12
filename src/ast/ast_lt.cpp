@@ -63,7 +63,8 @@ bool lt(ast * n1, ast * n2) {
     check_value(n1->get_kind(), n2->get_kind());
     switch(n1->get_kind()) {
     case AST_SORT: 
-        check_symbol(to_sort(n1)->get_name(), to_sort(n2)->get_name());
+        // check_symbol(to_sort(n1)->get_name(), to_sort(n2)->get_name());
+        check_value(to_sort(n1)->get_id(), to_sort(n2)->get_id());
         check_value(to_sort(n1)->get_num_parameters(), to_sort(n2)->get_num_parameters());
         num = to_sort(n1)->get_num_parameters();
         SASSERT(num > 0);
@@ -75,7 +76,8 @@ bool lt(ast * n1, ast * n2) {
         UNREACHABLE();
         return false;
     case AST_FUNC_DECL:
-        check_symbol(to_func_decl(n1)->get_name(), to_func_decl(n2)->get_name());
+        // check_symbol(to_func_decl(n1)->get_name(), to_func_decl(n2)->get_name());
+        check_value(to_func_decl(n1)->get_id(), to_func_decl(n2)->get_id());
         check_value(to_func_decl(n1)->get_arity(), to_func_decl(n2)->get_arity());
         check_value(to_func_decl(n1)->get_num_parameters(), to_func_decl(n2)->get_num_parameters());
         num = to_func_decl(n1)->get_num_parameters();
@@ -113,7 +115,7 @@ bool lt(ast * n1, ast * n2) {
         check_value(to_quantifier(n1)->get_weight(), to_quantifier(n2)->get_weight());
         num = to_quantifier(n1)->get_num_decls();
         for (unsigned i = 0; i < num; i++) {
-            check_symbol(to_quantifier(n1)->get_decl_name(i), to_quantifier(n2)->get_decl_name(i));
+            // check_symbol(to_quantifier(n1)->get_decl_name(i), to_quantifier(n2)->get_decl_name(i));
             check_ast(to_quantifier(n1)->get_decl_sort(i), to_quantifier(n2)->get_decl_sort(i));
         }
         num = to_quantifier(n1)->get_num_patterns();
