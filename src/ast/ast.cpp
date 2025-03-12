@@ -3519,3 +3519,8 @@ void prexpr(expr_ref &e){
 void ast_manager::show_id_gen(){
     std::cout << "id_gen: " << m_expr_id_gen.show_hash() << " " << m_decl_id_gen.show_hash() << "\n";
 }
+
+void dump(ast_manager & m, ast * n, unsigned depth) {
+    mk_bounded_pp pp(n, m, depth);
+    std::cout << pp << "\n";
+}
