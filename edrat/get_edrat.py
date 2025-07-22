@@ -5,7 +5,7 @@ import argparse
 declared_funcs = {'aux'}
 
 
-def sexpr_to_str(expr):
+def expr_to_str(expr):
     #rewrite aux(id) to aux!id
     if z3.is_app(expr) and expr.decl().name().startswith('aux'):
         # Sole child is a constant id.
@@ -14,7 +14,7 @@ def sexpr_to_str(expr):
         return 'aux!' + str(expr.arg(0))
     
     if z3.is_app(expr) and not z3.is_const(expr):
-        args_str = [sexpr_to_str(expr.arg(i)) for i in range(expr.num_args())]
+        args_str = [expr_to_str(expr.arg(i)) for i in range(expr.num_args())]
         return f'({expr.decl().name()} {" ".join(args_str)})'
 
     return str(expr)
@@ -34,9 +34,9 @@ def print_declarations(clause):
             func_name = child.decl().name()
             if func_name not in declared_funcs:                            
                 declared_funcs.add(func_name) 
-                domain = [str(child.decl().domain(i)) for i in range(child.decl().arity())]
+                domain = [child.decl().domain(i).sexpr() for i in range(child.decl().arity())]
                 
-                print(f'(declare-fun {func_name} ({" ".join(domain)}) {child.decl().range()})')
+                print(f'(declare-fun {func_name} ({" ".join(domain)}) {child.decl().range().sexpr()})')
 
         #! TODO: also handle sort declarations
 
@@ -47,9 +47,9 @@ def clause_eh(proof, deps, clause):
     match proof.decl().name():
         case "define-let":
             print_declarations(clause)
-            print(f'(define-let {sexpr_to_str(clause[0])} {sexpr_to_str(clause[1])})')
+            print(f'(define-let {expr_to_str(clause[0])} {expr_to_str(clause[1])})')
         case "define-literal":
-            print(f'(define-literal {sexpr_to_str(clause[0])} {sexpr_to_str(clause[1])})')
+            print(f'(define-literal {expr_to_str(clause[0])} {expr_to_str(clause[1])})')
         case "assumption":
             print(f'a {clause_to_str(clause)} 0')
         case "smt":
