@@ -2,11 +2,10 @@ import z3
 import z3.z3
 import argparse
 
-declared_funcs = set('aux')
+declared_funcs = {'aux'}
 
 
 def handle_define_let(clause):
-
     # The 'clause' is a pair [<binding>, <expr>]
     assert len(clause) == 2
     binding = clause[0]
