@@ -188,10 +188,8 @@ namespace smt {
         m_pp.define_expr(out, e);
     }
 
-    void clause_proof::declare_to_on_clause_eh(expr* e) {
+    void clause_proof::declare_with_on_clause(expr* e) {
         m_pp.collect(e);
-        // m_pp.display_decls(out);
-        // .... wait a sec we don't need to print declarations...
         // ------
         // Adapted from ast_pp_util::display_decls
         //ast_smt_pp pp(m);
@@ -235,11 +233,8 @@ namespace smt {
 
         // ----- 
         m.is_not(e, e);
-        //m_pp.define_expr(out, e);
-
         
         // -- The rest is adapted from define_expr
-
         auto n = e;
         auto &m_is_defined = m_pp.m_is_defined;
         auto &m_defined = m_pp.m_defined;
@@ -326,7 +321,7 @@ namespace smt {
 
             // declare the literals
             for (auto* e : v)
-                declare_to_on_clause_eh(e);
+                declare_with_on_clause(e);
 
             m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, lits.size(), lits.data());
 
