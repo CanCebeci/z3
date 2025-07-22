@@ -204,7 +204,7 @@ namespace smt {
 
         // ------
         // Adapted from ast_pp_util::display_decls
-        //ast_smt_pp pp(m);
+        // ast_smt_pp pp(m);
         // auto &coll = m_pp.coll;
         // auto &m_decls = m_pp.m_decls;
         // auto &m_removed = m_pp.m_removed;
@@ -218,14 +218,14 @@ namespace smt {
         // // // m_sorts = n;
         // unsigned n;
 
-        // arith_util au(m);
+        arith_util au(m);
 
         // n = coll.get_num_decls();
         // for (unsigned i = m_decls; i < n; ++i) {
         //     func_decl* f = coll.get_func_decls()[i];
         //     if (coll.should_declare(f) && !m_removed.contains(f)) {
         //         expr_ref_vector v(m);
-        //         v.push_back()
+        //         v.push_back(f);
         //         m_on_clause_eh(m_on_clause_ctx, au.mk_int(7), 0, nullptr, lits.size(), lits.data())
         //     }
         // }
@@ -307,7 +307,6 @@ namespace smt {
         }
 
         if (should_define_lit) {
-            arith_util au(m);
             literal l =  ctx.get_literal(e);
             int lit_int = l.sign() ? -l.var() : l.var();
             expr_ref_vector v(m);
