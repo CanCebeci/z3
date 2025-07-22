@@ -188,8 +188,20 @@ namespace smt {
         m_pp.define_expr(out, e);
     }
 
-    void clause_proof::declare_with_on_clause(expr* e) {
+    app *clause_proof::get_aux_repr(expr *e) {
+        arith_util au(m);
+        auto id = e->get_id();
+        expr *id_expr[1] = {au.mk_int(id)};
+        sort *s = e->get_sort();
+        //! TODO: may need to manage more than one symbol when we have different sorts.
+        return m.mk_app(symbol("aux"), 1, id_expr, s);
+    }
+
+    void clause_proof::declare_literal_with_on_clause(expr* e) {
         m_pp.collect(e);
+
+        bool should_define_lit = !m_pp.m_is_defined.is_marked(e);
+
         // ------
         // Adapted from ast_pp_util::display_decls
         //ast_smt_pp pp(m);
@@ -238,7 +250,6 @@ namespace smt {
         auto n = e;
         auto &m_is_defined = m_pp.m_is_defined;
         auto &m_defined = m_pp.m_defined;
-        arith_util au(m);
 
         ptr_buffer<expr> visit;
         visit.push_back(n);
@@ -264,12 +275,7 @@ namespace smt {
                 if (to_app(n)->get_num_args() > 0) {
                     // ! here, int sexprs are used to represent z3 expression ids.
                     expr_ref_vector v(m);
-
-                    auto id = n->get_id();
-                    expr *id_expr[1] = {au.mk_int(id)};
-                    sort *s = e->get_sort();
-                    //! TODO: may need to manage more than one symbol when we have different sorts.
-                    v.push_back(m.mk_app(symbol("aux"), 1, id_expr, s));
+                    v.push_back(get_aux_repr(n));
 
                     expr_ref_vector args(m);
                     for (auto* e : *to_app(n)) {
@@ -279,11 +285,7 @@ namespace smt {
                         if (is_app(e) && to_app(e)->get_num_args() == 0)
                             child_repr = e;
                         else {
-                            auto id = e->get_id();
-                            expr *id_expr[1] = {au.mk_int(id)};
-                            sort *s = e->get_sort();
-                            //! TODO: may need to manage more than one symbol when we have different sorts.
-                            child_repr = m.mk_app(symbol("aux"), 1, id_expr, s);
+                            child_repr = get_aux_repr(e);
                         }
 
                         args.push_back(child_repr);
@@ -291,7 +293,7 @@ namespace smt {
                     app *flat_app = m.mk_app(to_app(n)->get_decl(), args);
                     v.push_back(flat_app);
 
-                    m_on_clause_eh(m_on_clause_ctx, m.mk_app(symbol("define-expr"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
+                    m_on_clause_eh(m_on_clause_ctx, m.mk_app(symbol("define-let"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
                 }
                 continue;
             }
@@ -302,6 +304,16 @@ namespace smt {
             m_defined.push_back(n);
             m_is_defined.mark(n, true);
             visit.pop_back();        
+        }
+
+        if (should_define_lit) {
+            arith_util au(m);
+            literal l =  ctx.get_literal(e);
+            int lit_int = l.sign() ? -l.var() : l.var();
+            expr_ref_vector v(m);
+            v.push_back(au.mk_int(lit_int));
+            v.push_back(get_aux_repr(e));
+            m_on_clause_eh(m_on_clause_ctx, m.mk_app(symbol("define-literal"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
         }
     }
 
@@ -319,9 +331,9 @@ namespace smt {
                 lits.push_back(au.mk_int(lit_int));
             }
 
-            // declare the literals
+            // define expressions
             for (auto* e : v)
-                declare_with_on_clause(e);
+                declare_literal_with_on_clause(e);
 
             m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, lits.size(), lits.data());
 

@@ -73,7 +73,8 @@ namespace smt {
         proof_ref justification2proof(status st, justification* j);
         void log(status st, proof* p);
         void declare(std::ostream& out, expr* e);
-        void declare_with_on_clause(expr* e);
+        void declare_literal_with_on_clause(expr* e);
+        app *get_aux_repr(expr *e);
         std::ostream& display_literals(std::ostream& out, expr_ref_vector const& v);
         std::ostream& display_hint(std::ostream& out, proof* p);
     public:
