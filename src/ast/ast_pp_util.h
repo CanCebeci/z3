@@ -24,6 +24,8 @@ Revision History:
 #include "util/stacked_value.h"
 
 class ast_pp_util {
+//!tmp
+public:
     ast_manager&        m;
     obj_hashtable<func_decl> m_removed;
     smt2_pp_environment_dbg m_env;
@@ -33,9 +35,7 @@ class ast_pp_util {
     expr_mark               m_is_defined;
     expr_ref_vector         m_defined;
     unsigned_vector         m_defined_lim;
-
- public:
-
+    
     decl_collector      coll;
     
     ast_pp_util(ast_manager& m): m(m), m_env(m), m_rec_decls(0), m_decls(0), m_sorts(0), m_defined(m), coll(m) {}

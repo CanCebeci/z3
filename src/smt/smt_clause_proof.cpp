@@ -188,12 +188,149 @@ namespace smt {
         m_pp.define_expr(out, e);
     }
 
+    void clause_proof::declare_to_on_clause_eh(expr* e) {
+        m_pp.collect(e);
+        // m_pp.display_decls(out);
+        // .... wait a sec we don't need to print declarations...
+        // ------
+        // Adapted from ast_pp_util::display_decls
+        //ast_smt_pp pp(m);
+        // auto &coll = m_pp.coll;
+        // auto &m_decls = m_pp.m_decls;
+        // auto &m_removed = m_pp.m_removed;
+
+        // //! figure out sort decls later.
+        // // coll.order_deps(m_sorts);
+        // // unsigned n = coll.get_num_sorts();
+        // // ast_mark seen;
+        // // for (unsigned i = m_sorts; i < n; ++i) 
+        // //     pp.display_sort_decl(out, coll.get_sorts()[ di], seen);
+        // // // m_sorts = n;
+        // unsigned n;
+
+        // arith_util au(m);
+
+        // n = coll.get_num_decls();
+        // for (unsigned i = m_decls; i < n; ++i) {
+        //     func_decl* f = coll.get_func_decls()[i];
+        //     if (coll.should_declare(f) && !m_removed.contains(f)) {
+        //         expr_ref_vector v(m);
+        //         v.push_back()
+        //         m_on_clause_eh(m_on_clause_ctx, au.mk_int(7), 0, nullptr, lits.size(), lits.data())
+        //     }
+        // }
+        // m_decls = n;
+        
+        //! figure out rec decls later.
+        // n = coll.get_rec_decls().size();
+        // vector<std::pair<func_decl*, expr*>> recfuns;
+        // recfun::util u(m);
+        // for (unsigned i = m_rec_decls; i < n; ++i) {
+        //     func_decl* f = coll.get_rec_decls()[i];
+        //     recfuns.push_back(std::make_pair(f, u.get_def(f).get_rhs()));
+        // }
+        // if (!recfuns.empty())
+        //     ast_smt2_pp_recdefs(out, recfuns, m_env);
+        // m_rec_decls = n;
+
+        // ----- 
+        m.is_not(e, e);
+        //m_pp.define_expr(out, e);
+
+        
+        // -- The rest is adapted from define_expr
+
+        auto n = e;
+        auto &m_is_defined = m_pp.m_is_defined;
+        auto &m_defined = m_pp.m_defined;
+        arith_util au(m);
+
+        ptr_buffer<expr> visit;
+        visit.push_back(n);
+        while (!visit.empty()) {
+            n = visit.back();
+            if (m_is_defined.is_marked(n)) {
+                visit.pop_back();
+                continue;
+            }
+            if (is_app(n)) {
+                bool all_visit = true;
+                for (auto* e : *to_app(n)) {
+                    if (m_is_defined.is_marked(e))
+                        continue;
+                    all_visit = false;
+                    visit.push_back(e);
+                }
+                if (!all_visit)
+                    continue;
+                m_defined.push_back(n);
+                m_is_defined.mark(n, true);
+                visit.pop_back();
+                if (to_app(n)->get_num_args() > 0) {
+                    // ! here, int sexprs are used to represent z3 expression ids.
+                    expr_ref_vector v(m);
+
+                    auto id = n->get_id();
+                    expr *id_expr[1] = {au.mk_int(id)};
+                    sort *s = e->get_sort();
+                    //! TODO: may need to manage more than one symbol when we have different sorts.
+                    v.push_back(m.mk_app(symbol("aux"), 1, id_expr, s));
+
+                    expr_ref_vector args(m);
+                    for (auto* e : *to_app(n)) {
+                        // Mimicking display_expr_def
+                        expr *child_repr;
+
+                        if (is_app(e) && to_app(e)->get_num_args() == 0)
+                            child_repr = e;
+                        else {
+                            auto id = e->get_id();
+                            expr *id_expr[1] = {au.mk_int(id)};
+                            sort *s = e->get_sort();
+                            //! TODO: may need to manage more than one symbol when we have different sorts.
+                            child_repr = m.mk_app(symbol("aux"), 1, id_expr, s);
+                        }
+
+                        args.push_back(child_repr);
+                    }
+                    app *flat_app = m.mk_app(to_app(n)->get_decl(), args);
+                    v.push_back(flat_app);
+
+                    m_on_clause_eh(m_on_clause_ctx, m.mk_app(symbol("define-expr"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
+                }
+                continue;
+            }
+
+            //! TODO
+            // out << "(define-const $" << n->get_id() << " " << mk_pp(n->get_sort(), m) << " " << mk_pp(n, m) << ")\n";    
+
+            m_defined.push_back(n);
+            m_is_defined.mark(n, true);
+            visit.pop_back();        
+        }
+    }
+
     void clause_proof::update(status st, expr_ref_vector& v, proof* p) {
         TRACE(clause_proof, tout << m_trail.size() << " " << st << " " << v << "\n";);
         if (ctx.get_fparams().m_clause_proof)
             m_trail.push_back(info(st, v, p));
-        if (m_on_clause_eh) 
-            m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, v.size(), v.data());
+        if (m_on_clause_eh) {
+            expr_ref_vector lits(m);
+            arith_util au(m);
+
+            for (expr* e : v) {
+                literal l =  ctx.get_literal(e);
+                int lit_int = l.sign() ? -l.var() : l.var();
+                lits.push_back(au.mk_int(lit_int));
+            }
+
+            // declare the literals
+            for (auto* e : v)
+                declare_to_on_clause_eh(e);
+
+            m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, lits.size(), lits.data());
+
+        }
         
         if (m_has_log) {
             init_pp_out();
