@@ -5,7 +5,22 @@ import argparse
 declared_funcs = {'aux'}
 
 
-def handle_define_let(clause):
+def sexpr_to_str(expr):
+    #rewrite aux(id) to aux!id
+    if z3.is_app(expr) and expr.decl().name().startswith('aux'):
+        # Sole child is a constant id.
+        assert expr.num_args() == 1
+        assert expr.arg(0).num_args() == 0
+        return 'aux!' + str(expr.arg(0))
+    
+    if z3.is_app(expr) and not z3.is_const(expr):
+        args_str = [sexpr_to_str(expr.arg(i)) for i in range(expr.num_args())]
+        return f'({expr.decl().name()} {" ".join(args_str)})'
+
+    return str(expr)
+
+
+def print_declarations(clause):
     # The 'clause' is a pair [<binding>, <expr>]
     assert len(clause) == 2
     binding = clause[0]
@@ -24,17 +39,15 @@ def handle_define_let(clause):
                 print(f'(declare-fun {func_name} ({" ".join(domain)}) {child.decl().range()})')
 
         #! TODO: also handle sort declarations
-        #! TODO: rewrite aux(id) to aux!id
-
-    print(f'(define-let {binding} {expr})')
 
 
 def clause_eh(proof, deps, clause):
     match proof.decl().name():
         case "define-let":
-            handle_define_let(clause)
+            print_declarations(clause)
+            print(f'(define-let {sexpr_to_str(clause[0])} {sexpr_to_str(clause[1])})')
         case "define-literal":
-            print(f'(define-literal {clause[0]} {clause[1]})')
+            print(f'(define-literal {sexpr_to_str(clause[0])} {sexpr_to_str(clause[1])})')
         case "assumption":
             print(f'a {" ".join([str(lit) for lit in clause])} 0')
         case "smt":
