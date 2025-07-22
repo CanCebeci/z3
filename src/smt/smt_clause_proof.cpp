@@ -200,8 +200,6 @@ namespace smt {
     void clause_proof::declare_literal_with_on_clause(expr* e) {
         m_pp.collect(e);
 
-        bool should_define_lit = !m_pp.m_is_defined.is_marked(e);
-
         // ------
         // Adapted from ast_pp_util::display_decls
         // ast_smt_pp pp(m);
@@ -245,6 +243,8 @@ namespace smt {
 
         // ----- 
         m.is_not(e, e);
+
+        bool should_define_lit = !m_pp.m_is_defined.is_marked(e);
         
         // -- The rest is adapted from define_expr
         auto n = e;
