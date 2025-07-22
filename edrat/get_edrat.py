@@ -40,6 +40,8 @@ def print_declarations(clause):
 
         #! TODO: also handle sort declarations
 
+def clause_to_str(clause):
+    return " ".join([str(lit) for lit in clause])
 
 def clause_eh(proof, deps, clause):
     match proof.decl().name():
@@ -49,9 +51,16 @@ def clause_eh(proof, deps, clause):
         case "define-literal":
             print(f'(define-literal {sexpr_to_str(clause[0])} {sexpr_to_str(clause[1])})')
         case "assumption":
-            print(f'a {" ".join([str(lit) for lit in clause])} 0')
+            print(f'a {clause_to_str(clause)} 0')
         case "smt":
-            print(f't {" ".join([str(lit) for lit in clause])} 0')
+            print(f't {clause_to_str(clause)} 0')
+        case "del":
+            print(f'd {clause_to_str(clause)} 0')
+        case "rup":
+            print(f'{clause_to_str(clause)} 0')
+        case "tseitin":
+            #! TODO: check with Bruno that this is the right thing to do.
+            print(f'a {clause_to_str(clause)} 0')
         case _:
             raise Exception(f'Unexpected proof step from Z3: {proof}')
 
