@@ -298,8 +298,10 @@ namespace smt {
                 continue;
             }
 
-            //! TODO
-            // out << "(define-const $" << n->get_id() << " " << mk_pp(n->get_sort(), m) << " " << mk_pp(n, m) << ")\n";    
+            expr_ref_vector v(m);
+            v.push_back(get_aux_repr(n));
+            v.push_back(n);
+            m_on_clause_eh(m_on_clause_ctx, m.mk_app(symbol("define-let"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());  
 
             m_defined.push_back(n);
             m_is_defined.mark(n, true);
@@ -325,14 +327,22 @@ namespace smt {
             arith_util au(m);
 
             for (expr* e : v) {
+                // ignore the false literal
+                if (m.is_false(e))
+                    continue;
+
                 literal l =  ctx.get_literal(e);
                 int lit_int = l.sign() ? -l.var() : l.var();
                 lits.push_back(au.mk_int(lit_int));
             }
 
             // define expressions
-            for (auto* e : v)
+            for (expr* e : v) {
+                // ignore the false literal
+                if (m.is_false(e))
+                    continue;
                 declare_literal_with_on_clause(e);
+            }
 
             m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, lits.size(), lits.data());
 
