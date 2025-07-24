@@ -54,6 +54,8 @@ def clause_eh(proof, deps, clause):
             print(f'a {clause_to_str(clause)} 0')
         case "smt":
             print(f't {clause_to_str(clause)} 0')
+        case "inst":    # instances are smt clauses
+            print(f't {clause_to_str(clause)} 0')
         case "del":
             print(f'd {clause_to_str(clause)} 0')
         case "rup":
