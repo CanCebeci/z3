@@ -18,6 +18,8 @@ Revision History:
 #include "ast/ast_ll_pp.h"
 #include <iostream>
 
+#include <signal.h>
+
 namespace smt {
     
     clause_proof::clause_proof(context& ctx):
@@ -327,12 +329,19 @@ namespace smt {
             arith_util au(m);
 
             for (expr* e : v) {
+                literal l =  ctx.get_literal(e);
+                int lit_int = l.sign() ? -l.var() : l.var();
+
                 // ignore the false literal
                 if (m.is_false(e))
                     continue;
+                // handle the true literal
+                if (m.is_true(e))
+                    return; //skip the clause
 
-                literal l =  ctx.get_literal(e);
-                int lit_int = l.sign() ? -l.var() : l.var();
+                // literal 0 represents both true and false (see ctx.get_literal)
+                SASSERT(l.var() != 0);
+
                 lits.push_back(au.mk_int(lit_int));
             }
 
