@@ -17,7 +17,7 @@ def expr_to_str(expr):
         args_str = [expr_to_str(expr.arg(i)) for i in range(expr.num_args())]
         return f'({expr.decl().name()} {" ".join(args_str)})'
 
-    return str(expr)
+    return str(expr.sexpr())
 
 
 def print_declarations(clause):
@@ -79,7 +79,8 @@ def main():
 
     onc = z3.OnClause(s, clause_eh)
 
-    print(s.check())
+    if (s.check() == 'unsat'):
+        print(0)
 
 if __name__ == '__main__':
     main()
