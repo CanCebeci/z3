@@ -201,54 +201,11 @@ namespace smt {
 
     void clause_proof::declare_literal_with_on_clause(expr* e) {
         m_pp.collect(e);
-
-        // ------
-        // Adapted from ast_pp_util::display_decls
-        // ast_smt_pp pp(m);
-        // auto &coll = m_pp.coll;
-        // auto &m_decls = m_pp.m_decls;
-        // auto &m_removed = m_pp.m_removed;
-
-        // //! figure out sort decls later.
-        // // coll.order_deps(m_sorts);
-        // // unsigned n = coll.get_num_sorts();
-        // // ast_mark seen;
-        // // for (unsigned i = m_sorts; i < n; ++i) 
-        // //     pp.display_sort_decl(out, coll.get_sorts()[ di], seen);
-        // // // m_sorts = n;
-        // unsigned n;
-
-        arith_util au(m);
-
-        // n = coll.get_num_decls();
-        // for (unsigned i = m_decls; i < n; ++i) {
-        //     func_decl* f = coll.get_func_decls()[i];
-        //     if (coll.should_declare(f) && !m_removed.contains(f)) {
-        //         expr_ref_vector v(m);
-        //         v.push_back(f);
-        //         m_on_clause_eh(m_on_clause_ctx, au.mk_int(7), 0, nullptr, lits.size(), lits.data())
-        //     }
-        // }
-        // m_decls = n;
-        
-        //! figure out rec decls later.
-        // n = coll.get_rec_decls().size();
-        // vector<std::pair<func_decl*, expr*>> recfuns;
-        // recfun::util u(m);
-        // for (unsigned i = m_rec_decls; i < n; ++i) {
-        //     func_decl* f = coll.get_rec_decls()[i];
-        //     recfuns.push_back(std::make_pair(f, u.get_def(f).get_rhs()));
-        // }
-        // if (!recfuns.empty())
-        //     ast_smt2_pp_recdefs(out, recfuns, m_env);
-        // m_rec_decls = n;
-
-        // ----- 
+        // m_pp.display_decls(out); // This is done by the callback.
         m.is_not(e, e);
-
-        bool should_define_lit = !m_pp.m_is_defined.is_marked(e);
         
         // -- The rest is adapted from define_expr
+        bool should_define_lit = !m_pp.m_is_defined.is_marked(e);
         auto n = e;
         auto &m_is_defined = m_pp.m_is_defined;
         auto &m_defined = m_pp.m_defined;
