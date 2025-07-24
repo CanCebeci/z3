@@ -200,6 +200,8 @@ namespace smt {
     }
 
     void clause_proof::declare_literal_with_on_clause(expr* e) {
+        arith_util au(m);
+
         m_pp.collect(e);
         // m_pp.display_decls(out); // This is done by the callback.
         m.is_not(e, e);
