@@ -236,6 +236,8 @@ namespace euf {
         void on_proof(unsigned n, literal const* lits, sat::status st);
         void on_check(unsigned n, literal const* lits, sat::status st);
         void on_clause_eh(unsigned n, literal const* lits, sat::status st);
+        app *get_aux_repr(expr *e);
+        void declare_literal_with_on_clause(expr* e, literal l);
         std::ostream& display_literals(std::ostream& out, unsigned n, sat::literal const* lits);
         void display_assume(std::ostream& out, unsigned n, literal const* lits);
         void display_inferred(std::ostream& out, unsigned n, literal const* lits, expr* proof_hint);        

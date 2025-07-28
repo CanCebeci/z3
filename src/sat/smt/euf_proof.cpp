@@ -375,13 +375,135 @@ namespace euf {
         on_clause_eh(n, lits, st);
     }
 
+    app *solver::get_aux_repr(expr *e) {
+        arith_util au(m);
+        auto id = e->get_id();
+        expr *id_expr[1] = {au.mk_int(id)};
+        sort *s = e->get_sort();
+        //! TODO: may need to manage more than one symbol when we have different sorts.
+        return m.mk_app(symbol("aux"), 1, id_expr, s);
+    }
+
+    void solver::declare_literal_with_on_clause(expr* e, literal l) {
+        arith_util au(m);
+
+        m_clause_visitor.collect(e);
+        // m_pp.display_decls(out); // This is done by the callback.
+        m.is_not(e, e);
+        
+        // -- The rest is adapted from define_expr
+        bool should_define_lit = !m_clause_visitor.m_is_defined.is_marked(e);
+        auto n = e;
+        auto &m_is_defined = m_clause_visitor.m_is_defined;
+        auto &m_defined = m_clause_visitor.m_defined;
+
+        ptr_buffer<expr> visit;
+        visit.push_back(n);
+        while (!visit.empty()) {
+            n = visit.back();
+            if (m_is_defined.is_marked(n)) {
+                visit.pop_back();
+                continue;
+            }
+            if (is_app(n)) {
+                bool all_visit = true;
+                for (auto* e : *to_app(n)) {
+                    if (m_is_defined.is_marked(e))
+                        continue;
+                    all_visit = false;
+                    visit.push_back(e);
+                }
+                if (!all_visit)
+                    continue;
+                m_defined.push_back(n);
+                m_is_defined.mark(n, true);
+                visit.pop_back();
+                if (to_app(n)->get_num_args() > 0) {
+                    // ! here, int sexprs are used to represent z3 expression ids.
+                    expr_ref_vector v(m);
+                    v.push_back(get_aux_repr(n));
+
+                    expr_ref_vector args(m);
+                    for (auto* e : *to_app(n)) {
+                        // Mimicking display_expr_def
+                        expr *child_repr;
+
+                        if (is_app(e) && to_app(e)->get_num_args() == 0)
+                            child_repr = e;
+                        else {
+                            child_repr = get_aux_repr(e);
+                        }
+
+                        args.push_back(child_repr);
+                    }
+                    app *flat_app = m.mk_app(to_app(n)->get_decl(), args);
+                    v.push_back(flat_app);
+
+                    m_on_clause(m_on_clause_ctx, m.mk_app(symbol("define-let"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
+                }
+                continue;
+            }
+
+            expr_ref_vector v(m);
+            v.push_back(get_aux_repr(n));
+            v.push_back(n);
+            m_on_clause(m_on_clause_ctx, m.mk_app(symbol("define-let"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());  
+
+            m_defined.push_back(n);
+            m_is_defined.mark(n, true);
+            visit.pop_back();        
+        }
+
+        if (should_define_lit) {
+            //! just use l.var(). We flip the sign of e to always be positive at the beginning of the function.
+            //! TODO: double check this behavior.
+            // int lit_int = l.sign() ? -l.var() : l.var();
+
+            int lit_int = l.var();
+
+            expr_ref_vector v(m);
+            v.push_back(au.mk_int(lit_int));
+            v.push_back(get_aux_repr(e));
+            m_on_clause(m_on_clause_ctx, m.mk_app(symbol("define-literal"), 0, 0, m.mk_proof_sort()), 0, nullptr, v.size(), v.data());
+        }
+    }
+
     void solver::on_clause_eh(unsigned n, literal const* lits, sat::status st) {
+        // SASSERT(false);
         if (!m_on_clause)
             return;
         m_clause.reset();
-        for (unsigned i = 0; i < n; ++i) 
-            m_clause.push_back(literal2expr(lits[i]));
+
+        arith_util au(m);
+        for (unsigned i = 0; i < n; ++i) {
+            literal l = lits[i];
+            int lit_int = l.sign() ? -l.var() : l.var();
+            
+            expr *e = literal2expr(l);
+            // ignore the false literal
+            if (m.is_false(e))
+                continue;
+            // handle the true literal
+            if (m.is_true(e))
+                return; //skip the clause
+            // literal 0 represents both true and false (see ctx.get_literal)
+                SASSERT(l.var() != 0);
+
+            m_clause.push_back(au.mk_int(lit_int));
+
+            // ignore the false literal
+            if (m.is_false(e))
+                continue;
+            declare_literal_with_on_clause(e, l);
+        }
+        
         auto hint = status2proof_hint(st);
+        // these could probaby be folded into status2proof_hint.
+        if (st.is_input())
+            hint = m.mk_const("assumption", m.mk_proof_sort());
+        if (st.is_deleted())
+            hint = m.mk_const("del", m.mk_proof_sort());
+            
         m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
     }
 
