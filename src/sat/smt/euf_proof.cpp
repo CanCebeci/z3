@@ -387,15 +387,17 @@ namespace euf {
     void solver::declare_literal_with_on_clause(expr* e, literal l) {
         arith_util au(m);
 
-        m_clause_visitor.collect(e);
+        std::cerr << "Declaring " << mk_pp(e, m) << '\n';
+
+        m_cb_clause_visitor.collect(e);
         // m_pp.display_decls(out); // This is done by the callback.
         m.is_not(e, e);
         
         // -- The rest is adapted from define_expr
-        bool should_define_lit = !m_clause_visitor.m_is_defined.is_marked(e);
+        bool should_define_lit = !m_cb_clause_visitor.m_is_defined.is_marked(e);
         auto n = e;
-        auto &m_is_defined = m_clause_visitor.m_is_defined;
-        auto &m_defined = m_clause_visitor.m_defined;
+        auto &m_is_defined = m_cb_clause_visitor.m_is_defined;
+        auto &m_defined = m_cb_clause_visitor.m_defined;
 
         ptr_buffer<expr> visit;
         visit.push_back(n);

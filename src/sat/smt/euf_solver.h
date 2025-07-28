@@ -153,6 +153,7 @@ namespace euf {
         // proofs 
         bool                             m_proof_initialized = false;
         ast_pp_util                      m_clause_visitor;
+        ast_pp_util                      m_cb_clause_visitor;
         bool                             m_display_all_decls = false;
         smt_proof_checker                m_smt_proof_checker;
 
