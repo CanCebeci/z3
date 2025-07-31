@@ -17,7 +17,8 @@ def expr_to_str(expr):
         args_str = [expr_to_str(expr.arg(i)) for i in range(expr.num_args())]
         return f'({expr.decl().name()} {" ".join(args_str)})'
 
-    return str(expr.sexpr())
+    # Z3py may format the sexpr over multiple lines, so we remove \n explicitly
+    return str(expr.sexpr()).replace('\n', '')
 
 
 def print_declarations(clause):
@@ -45,6 +46,9 @@ def clause_to_str(clause):
 
 def clause_eh(proof, deps, clause):
     match proof.decl().name():
+        case "debug":
+            print(f'; debug: {clause_to_str(clause)}')
+            # pass
         case "define-let":
             print_declarations(clause)
             print(f'(define-let {expr_to_str(clause[0])} {expr_to_str(clause[1])})')
@@ -55,6 +59,10 @@ def clause_eh(proof, deps, clause):
         case "smt":
             print(f't {clause_to_str(clause)} 0')
         case "inst":    # instances are smt clauses
+            print(f't {clause_to_str(clause)} 0')
+        case "farkas":    # farkas justification are smt clauses??
+            print(f't {clause_to_str(clause)} 0')
+        case "bound":    # farkas justification are smt clauses??
             print(f't {clause_to_str(clause)} 0')
         case "del":
             print(f'd {clause_to_str(clause)} 0')
@@ -75,6 +83,8 @@ def main():
 
     problem = z3.parse_smt2_file(args.smt)
     s = z3.Solver()
+    z3.set_param("sat.euf", True)
+    z3.set_param("tactic.default_tactic", "smt")
     s.add(problem)
 
     onc = z3.OnClause(s, clause_eh)
