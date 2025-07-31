@@ -416,7 +416,8 @@ namespace sat {
         bool logged = false;
         if (!redundant || !st.is_sat()) {
             unsigned old_sz = num_lits;
-            bool keep = m_trim || simplify_clause(num_lits, lits);
+            // bool keep = m_trim || simplify_clause(num_lits, lits);
+            bool keep = true;
             TRACE(sat_mk_clause, tout << "mk_clause (after simp), keep: " << keep << "\n" << mk_lits_pp(num_lits, lits) << "\n";);
             if (!keep) {
                 return nullptr; // clause is equivalent to true.
