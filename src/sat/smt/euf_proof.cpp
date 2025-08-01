@@ -386,16 +386,18 @@ namespace euf {
 
     void solver::declare_literal_with_on_clause(expr* e, literal l) {
         arith_util au(m);
-
-        std::cerr << "Declaring " << mk_pp(e, m) << '\n';
+        
+        m.is_not(e, e);
+        // expr *e = _e;
+        // if (m.is_not(_e)) {
+        //     e = to_app(_e)->get_arg(0);
+        // }
 
         m_cb_clause_visitor.collect(e);
-        // m_pp.display_decls(out); // This is done by the callback.
-        m.is_not(e, e);
         
         // -- The rest is adapted from define_expr
         bool should_define_lit = !m_cb_clause_visitor.m_is_defined.is_marked(e);
-        auto n = e;
+        expr *n = e;
         auto &m_is_defined = m_cb_clause_visitor.m_is_defined;
         auto &m_defined = m_cb_clause_visitor.m_defined;
 
@@ -481,7 +483,8 @@ namespace euf {
             literal l = lits[i];
             int lit_int = l.sign() ? -l.var() : l.var();
             
-            expr *e = literal2expr(l);
+            expr_ref e = literal2expr(l);
+        
             // ignore the false literal
             if (m.is_false(e))
                 continue;
@@ -507,6 +510,15 @@ namespace euf {
             hint = m.mk_const("del", m.mk_proof_sort());
             
         m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
+
+        // bool log_exprs = true;
+        // if (log_exprs) {
+        //     m_clause.reset();
+        //     for (unsigned i = 0; i < n; ++i) 
+        //         m_clause.push_back(literal2expr(lits[i]));
+        //     hint = m.mk_const("debug", m.mk_proof_sort());
+        //     m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
+        // }
     }
 
     void solver::on_proof(unsigned n, literal const* lits, sat::status st) {

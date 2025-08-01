@@ -89,8 +89,12 @@ def main():
 
     onc = z3.OnClause(s, clause_eh)
 
-    if (s.check() == 'unsat'):
+    if (s.check() == z3.unsat):
         print(0)
+
+    # This is needed to prevent a memory leak
+    # (Debug mode prints: WARNING: Uncollected memory: 0: 13Z3_solver_ref)
+    del z3.z3._my_hacky_class
 
 if __name__ == '__main__':
     main()
