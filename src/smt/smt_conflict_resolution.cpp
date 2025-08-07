@@ -395,6 +395,11 @@ namespace smt {
 
         m_conflict_lvl      = get_max_lvl(consequent, js);
 
+
+        m.trace_stream() << "---conflict_start\n";
+        m_ctx.display(m.trace_stream(), js); tout << "\n";
+        m.trace_stream() << "conflict_end----\n";
+
         TRACE(conflict_bug,
               tout << "conflict_lvl: " << m_conflict_lvl << " scope_lvl: " << m_ctx.get_scope_level() << " base_lvl: " << m_ctx.get_base_level()
               << " search_lvl: " << m_ctx.get_search_level() << "\n";
