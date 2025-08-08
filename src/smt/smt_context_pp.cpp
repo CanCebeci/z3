@@ -688,9 +688,9 @@ namespace smt {
             out << " decision";
         out << " ";
         display_compact_j(out, j);
-        // out << "\n----start\n";
-        // display_literal_smt2(out, l);
-        // out << "\nend----\n";
+        out << "\n----assign_start\n";
+        display_literal_smt2(out, l);
+        out << "\nassign_end----\n";
     }
 
     std::ostream& operator<<(std::ostream& out, enode_pp const& p) {
