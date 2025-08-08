@@ -641,6 +641,11 @@ namespace smt {
             const_cast<conflict_resolution&>(*m_conflict_resolution).justification2literals(j.get_justification(), lits);
             out << "justification " << j.get_justification()->get_from_theory() << ": ";
             display_literals_smt2(out, lits);
+            out << "assignment_levels:";
+            for (unsigned i = 0; i < lits.size(); ++i) {
+                 out << " " << get_assign_level(lits[i]);
+            }
+            out << "\n";
             break;
         }
         default:
