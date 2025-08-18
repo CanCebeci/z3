@@ -24,7 +24,7 @@ namespace smt {
     
     clause_proof::clause_proof(context& ctx):
         ctx(ctx), m(ctx.get_manager()), m_lits(m), m_pp(m),
-        m_assumption(m), m_rup(m), m_del(m), m_smt(m) {
+        m_assumption(m), m_rup(m), m_del(m), m_smt(m), m_theory_conflict(m) {
         
         auto proof_log = ctx.get_fparams().m_proof_log;
         m_has_log = proof_log.is_non_empty_string();
@@ -83,6 +83,10 @@ namespace smt {
             if (!m_smt)
                 m_smt = m.mk_const("smt", m.mk_proof_sort());
             return m_smt;
+        case status::th_conflict:
+            if (!m_theory_conflict)
+                m_theory_conflict = m.mk_const("theory_conflict", m.mk_proof_sort());
+            return m_theory_conflict;
         case status::deleted:
             if (!m_del)
                 m_del = m.mk_const("del", m.mk_proof_sort());
@@ -153,7 +157,7 @@ namespace smt {
         update(st, m_lits, pr);
     }
 
-    void clause_proof::propagate(literal lit, justification const& jst, literal_vector const& ante) {
+    void clause_proof::propagate_conflict(literal lit, justification const& jst, literal_vector const& ante) {
         if (!is_enabled())
             return;
         m_lits.reset();
@@ -161,7 +165,7 @@ namespace smt {
             m_lits.push_back(ctx.literal2expr(~l));
         m_lits.push_back(ctx.literal2expr(lit));
         proof_ref pr(m.mk_app(symbol("smt"), 0, nullptr, m.mk_proof_sort()), m);
-        update(clause_proof::status::th_lemma, m_lits, pr);
+        update(clause_proof::status::th_conflict, m_lits, pr);
     }
 
     void clause_proof::del(clause& c) {
@@ -281,6 +285,7 @@ namespace smt {
 
     void clause_proof::update(status st, expr_ref_vector& v, proof* p) {
         TRACE(clause_proof, tout << m_trail.size() << " " << st << " " << v << "\n";);
+        // SASSERT(false);
         if (ctx.get_fparams().m_clause_proof)
             m_trail.push_back(info(st, v, p));
         if (m_on_clause_eh) {
@@ -334,6 +339,7 @@ namespace smt {
                     break;
                 }
                 Z3_fallthrough;
+            case clause_proof::status::th_conflict:
             case clause_proof::status::lemma:
             case clause_proof::status::th_lemma:
             case clause_proof::status::th_assumption:

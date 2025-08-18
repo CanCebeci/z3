@@ -43,6 +43,7 @@ namespace smt {
             assumption,
             th_lemma,
             th_assumption,
+            th_conflict,
             deleted
         };
     private:
@@ -63,7 +64,7 @@ namespace smt {
         void*                           m_on_clause_ctx = nullptr;
         ast_pp_util                     m_pp;
         scoped_ptr<std::ofstream>       m_pp_out;
-        proof_ref m_assumption, m_rup, m_del, m_smt;
+        proof_ref m_assumption, m_rup, m_del, m_smt, m_theory_conflict;
 
         void init_pp_out();
         
@@ -84,7 +85,7 @@ namespace smt {
         void add(literal lit1, literal lit2, clause_kind k, justification* j, literal_buffer const* simp_lits = nullptr);
         void add(clause& c, literal_buffer const* simp_lits = nullptr);
         void add(unsigned n, literal const* lits, clause_kind k, justification* j);
-        void propagate(literal lit, justification const& j, literal_vector const& ante);
+        void propagate_conflict(literal lit, justification const& j, literal_vector const& ante);
         void del(clause& c);
         proof_ref get_proof(bool inconsistent);
         bool is_enabled() const { return m_enabled; }
