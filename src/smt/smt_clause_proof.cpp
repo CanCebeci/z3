@@ -85,7 +85,7 @@ namespace smt {
             return m_smt;
         case status::th_conflict:
             if (!m_theory_conflict)
-                m_theory_conflict = m.mk_const("theory_conflict", m.mk_proof_sort());
+                m_theory_conflict = m.mk_const("theory-conflict", m.mk_proof_sort());
             return m_theory_conflict;
         case status::deleted:
             if (!m_del)
@@ -164,7 +164,7 @@ namespace smt {
         for (literal l : ante)
             m_lits.push_back(ctx.literal2expr(~l));
         m_lits.push_back(ctx.literal2expr(lit));
-        proof_ref pr(m.mk_app(symbol("smt"), 0, nullptr, m.mk_proof_sort()), m);
+        proof_ref pr(m.mk_app(symbol("theory-conflict"), 0, nullptr, m.mk_proof_sort()), m);
         update(clause_proof::status::th_conflict, m_lits, pr);
     }
 
