@@ -511,14 +511,14 @@ namespace euf {
             
         m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
 
-        // bool log_exprs = true;
-        // if (log_exprs) {
-        //     m_clause.reset();
-        //     for (unsigned i = 0; i < n; ++i) 
-        //         m_clause.push_back(literal2expr(lits[i]));
-        //     hint = m.mk_const("debug", m.mk_proof_sort());
-        //     m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
-        // }
+        bool log_exprs = true;
+        if (log_exprs) {
+            m_clause.reset();
+            for (unsigned i = 0; i < n; ++i) 
+                m_clause.push_back(literal2expr(lits[i]));
+            hint = m.mk_const("debug", m.mk_proof_sort());
+            m_on_clause(m_on_clause_ctx, hint, 0, nullptr, m_clause.size(), m_clause.data());
+        }
     }
 
     void solver::on_proof(unsigned n, literal const* lits, sat::status st) {

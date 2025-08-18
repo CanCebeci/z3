@@ -314,6 +314,12 @@ namespace smt {
 
             m_on_clause_eh(m_on_clause_ctx, p, 0, nullptr, lits.size(), lits.data());
 
+            bool log_exprs = true;
+            if (log_exprs) {
+                proof *hint = m.mk_const("debug", m.mk_proof_sort());
+                m_on_clause_eh(m_on_clause_ctx, hint, 0, nullptr, v.size(), v.data());
+            }
+
         }
         
         if (m_has_log) {
