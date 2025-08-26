@@ -70,7 +70,8 @@ enum case_split_strategy {
     CS_RELEVANCY, // case split based on relevancy
     CS_RELEVANCY_ACTIVITY, // case split based on relevancy and activity
     CS_RELEVANCY_GOAL, // based on relevancy and the current goal
-    CS_ACTIVITY_THEORY_AWARE_BRANCHING // activity-based case split, but theory solvers can manipulate activity
+    CS_ACTIVITY_THEORY_AWARE_BRANCHING, // activity-based case split, but theory solvers can manipulate activity
+    CS_LEXICOGRAPHICAL
 };
 
 struct smt_params : public preprocessor_params,

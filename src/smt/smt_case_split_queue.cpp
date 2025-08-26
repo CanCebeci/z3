@@ -25,6 +25,8 @@ Revision History:
 #include "util/map.h"
 #include "util/hashtable.h"
 
+#include <sstream>
+
 using namespace smt;
 
 namespace {
@@ -61,6 +63,95 @@ namespace {
     };
 
     typedef heap<theory_aware_act_lt> theory_aware_act_queue;
+
+    struct lex_lt {
+        context const & m_context;
+        lex_lt(context const & c): m_context(c) {}
+
+        bool operator()(bool_var v1, bool_var v2) const {
+            std::ostringstream buf1, buf2;
+
+            params_ref p;
+            p.set_uint("max_depth", 4294967295u);
+            p.set_uint("min_alias_size", 4294967295u);
+            buf1 << mk_pp(m_context.bool_var2expr(v1), m_context.get_manager(), p);
+            buf2 << mk_pp(m_context.bool_var2expr(v2), m_context.get_manager(), p);
+
+            return buf1.str().compare(buf2.str()) < 0;
+        }
+    };
+
+    typedef heap<lex_lt> lex_queue;
+
+    class lex_case_split_queue : public case_split_queue {
+    protected:
+        context &          m_context;
+        smt_params &       m_params;  
+        lex_queue          m_queue;
+    public:
+        lex_case_split_queue(context & ctx, smt_params & p):
+            m_context(ctx),
+            m_params(p),
+            m_queue(1024, ctx) {
+        }
+            
+        void activity_increased_eh(bool_var v) override {}
+        void activity_decreased_eh(bool_var v) override {}
+
+        void mk_var_eh(bool_var v) override {
+            m_queue.reserve(v+1);
+            SASSERT(!m_queue.contains(v));
+            m_queue.insert(v);
+        }
+
+        void del_var_eh(bool_var v) override {
+            if (m_queue.contains(v))
+                m_queue.erase(v);
+        }
+
+        void unassign_var_eh(bool_var v) override {
+            if (!m_queue.contains(v))
+                m_queue.insert(v);
+        }
+
+        void relevant_eh(expr * n) override {}
+        void init_search_eh() override {}
+        void end_search_eh() override {}
+
+        void reset() override {
+            m_queue.reset();
+        }
+
+        void push_scope() override {}
+
+        void pop_scope(unsigned num_scopes) override {}
+
+        void next_case_split(bool_var & next, lbool & phase) override {
+            phase = l_undef;
+            while (!m_queue.empty()) {
+                next = m_queue.erase_min();
+                if (m_context.get_assignment(next) == l_undef)
+                    return;
+            }
+            next = null_bool_var;
+        }
+
+        void display(std::ostream & out) override {
+            bool first = true;
+            for (unsigned v : m_queue) {
+                if (m_context.get_assignment(v) == l_undef) {
+                    if (first) {
+                        out << "remaining case-splits:\n";
+                        first = false;
+                    }
+                    out << "#" << m_context.bool_var2expr(v)->get_id() << " ";
+                }
+            }
+            if (!first)
+                out << "\n";            
+        }
+    };
+
 
     /**
        \brief Case split queue based on activity and random splits.
@@ -1270,6 +1361,8 @@ namespace smt {
             return alloc(rel_goal_case_split_queue, ctx, p);
         case CS_ACTIVITY_THEORY_AWARE_BRANCHING:
             return alloc(theory_aware_branching_queue, ctx, p);
+        case CS_LEXICOGRAPHICAL:
+            return alloc(lex_case_split_queue, ctx, p);
         default:
             return alloc(act_case_split_queue, ctx, p);
         }
