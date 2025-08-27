@@ -646,6 +646,15 @@ namespace smt {
                  out << " " << get_assign_level(lits[i]);
             }
             out << "\n";
+
+            //! tmp
+            out << "assignments_start\n";
+            for (literal lit : m_assigned_literals) {
+                expr_ref n(m);
+                literal2expr(lit, n);
+                out << n << '\n';
+            }
+            out << "assignments_end\n";
             break;
         }
         default:
