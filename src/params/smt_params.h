@@ -89,7 +89,7 @@ struct smt_params : public preprocessor_params,
     bool             m_display_unsat_core = false;
     bool             m_check_proof = false;
     bool             m_eq_propagation = true;
-    bool             m_binary_clause_opt = true;
+    bool             m_binary_clause_opt = false;
     unsigned         m_relevancy_lvl = 2;
     bool             m_relevancy_lemma = false;
     unsigned         m_random_seed = 0;

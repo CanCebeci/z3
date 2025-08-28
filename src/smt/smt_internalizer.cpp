@@ -304,7 +304,12 @@ namespace smt {
         else {
             justification* j = mk_justification(justification_proof_wrapper(*this, pr));
             m_clause_proof.add(l, CLS_AUX, j);
-            assign(l, j);
+            
+            // cc: I want to be able to easily track input assertions even when proof production is off.
+            proof *asserted_proof = m.mk_const("cc-hack-assserted", m.mk_proof_sort());
+            justification* _j = mk_justification(justification_proof_wrapper(*this, asserted_proof));
+            
+            assign(l, _j);
             mark_as_relevant(l);
         }
     }

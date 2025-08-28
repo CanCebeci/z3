@@ -279,6 +279,9 @@ namespace smt {
         m_assignment[(~l).index()] = l_false;
         bool_var_data & d          = get_bdata(l.var());
         set_justification(l.var(), d, j);
+
+        std::cerr << "Assign " << literal2expr(l) <<  " : " << j.get_kind() << '\n';
+
         d.m_scope_lvl              = m_scope_lvl;
         if (m_fparams.m_restart_adaptive && d.m_phase_available) {
             m_agility             *= m_fparams.m_agility_factor;

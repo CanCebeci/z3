@@ -28,6 +28,8 @@ namespace smt {
     */
     clause * clause::mk(ast_manager & m, unsigned num_lits, literal * lits, clause_kind k, justification * js,
                         clause_del_eh * del_eh, bool save_atoms, expr * const * bool_var2expr_map) {
+        std::cerr << "Clause::mk : " << k << "\n";
+
         SASSERT(smt::is_axiom(k) || js == nullptr || !js->in_region());
         SASSERT(num_lits >= 2);
         unsigned sz                = get_obj_size(num_lits, k, save_atoms, del_eh != nullptr, js != nullptr);

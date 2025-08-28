@@ -85,6 +85,7 @@ namespace smt {
         void add(literal lit1, literal lit2, clause_kind k, justification* j, literal_buffer const* simp_lits = nullptr);
         void add(clause& c, literal_buffer const* simp_lits = nullptr);
         void add(unsigned n, literal const* lits, clause_kind k, justification* j);
+        void get_literal_dependencies(literal l);
         void propagate_conflict(literal lit, justification const& j, literal_vector const& ante);
         void del(clause& c);
         proof_ref get_proof(bool inconsistent);
