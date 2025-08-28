@@ -280,7 +280,7 @@ namespace smt {
         bool_var_data & d          = get_bdata(l.var());
         set_justification(l.var(), d, j);
 
-        std::cerr << "Assign " << literal2expr(l) <<  " : " << j.get_kind() << '\n';
+        // std::cerr << "Assign " << literal2expr(l) <<  " : " << j.get_kind() << '\n';
 
         d.m_scope_lvl              = m_scope_lvl;
         if (m_fparams.m_restart_adaptive && d.m_phase_available) {
@@ -3852,6 +3852,20 @@ namespace smt {
               get_guessed_literals(guessed_lits);
               tout << guessed_lits << "\n";);
         end_search();
+
+        // CC: log conflict dependencies
+        auto &out = std::cout;
+        out << "Conflict dependencies:\n";
+        unsigned cur = 0;
+        for (auto deps : m_conflict_dependencies) {
+            out << cur << ':'; 
+            for (auto d : deps) {
+                out << ' ' << d;
+            }
+            out << '\n';
+            cur++;
+        }
+
         return status;
     }
 
@@ -4337,7 +4351,11 @@ namespace smt {
                 }
             }
 #endif
-            mk_clause(num_lits, lits, js, CLS_LEARNED);
+            clause *c = mk_clause(num_lits, lits, js, CLS_LEARNED);
+            unsigned conflict_id = m_num_conflicts - 1;
+            SASSERT(conflict_id == m_conflict_id2clause.size());
+            m_conflict_id2clause.push_back(c);
+
             if (delay_forced_restart) {
                 SASSERT(num_lits == 1);
                 expr * unit     = bool_var2expr(lits[0].var());

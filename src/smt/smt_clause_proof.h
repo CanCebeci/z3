@@ -32,6 +32,8 @@ Revision History:
 #include "smt/smt_justification.h"
 #include "tactic/user_propagator_base.h"
 
+#include <set>
+
 namespace smt {
     class context;
     class justification;
@@ -85,7 +87,7 @@ namespace smt {
         void add(literal lit1, literal lit2, clause_kind k, justification* j, literal_buffer const* simp_lits = nullptr);
         void add(clause& c, literal_buffer const* simp_lits = nullptr);
         void add(unsigned n, literal const* lits, clause_kind k, justification* j);
-        void get_literal_dependencies(literal l);
+        void get_literal_dependencies(literal l, std::set<unsigned> &deps);
         void propagate_conflict(literal lit, justification const& j, literal_vector const& ante);
         void del(clause& c);
         proof_ref get_proof(bool inconsistent);

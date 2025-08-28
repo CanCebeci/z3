@@ -222,6 +222,13 @@ namespace smt {
         obj_hashtable<expr>         m_cache_generation_visited;
         dyn_ack_manager             m_dyn_ack_manager;
 
+    public:    
+        // CC: conflict dependendecy accounting.
+        clause_vector               m_conflict_id2clause;
+        vector<vector<unsigned>>    m_conflict_dependencies;
+        
+    protected:
+
         // -----------------------------------
         //
         // Model generation
@@ -546,6 +553,19 @@ namespace smt {
                 result = m.mk_not(bool_var2expr(l.var()));
             else
                 result = bool_var2expr(l.var());
+        }
+
+        // This is horribly inefficient
+        unsigned clause2conflict_id(clause *cl) {
+            SASSERT(cl->get_kind() == CLS_LEARNED);
+            unsigned id=0;
+            for (clause *c : m_conflict_id2clause) {
+                if (c == cl)
+                    return id;
+                id++;
+            }
+            SASSERT(false); 
+            return -1;
         }
 
         expr_ref literal2expr(literal l) const {
