@@ -490,7 +490,16 @@ namespace smt {
         literal consequent;
 
         if (!initialize_resolve(conflict, not_l, js, consequent)) {
-            return false;
+            // CC: This is hacky, but I don't want to lose the dependencies or the final conflict if it's theory-justified.
+            if (js.get_kind() == b_justification::JUSTIFICATION) {
+                justification *jst = js.get_justification();
+                literal_vector & antecedents = m_tmp_literal_vector;
+                antecedents.reset();
+                justification2literals_core(jst, antecedents);
+                m_ctx.get_clause_proof().propagate_conflict(consequent, *jst, antecedents);
+                return false;
+            }
+   
         }
 
         unsigned idx = skip_literals_above_conflict_level();
