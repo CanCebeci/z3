@@ -3866,6 +3866,24 @@ namespace smt {
             cur++;
         }
 
+        // CC: also log to a file
+        std::ofstream deps_out("conflict_deps.log");
+        if (!deps_out.is_open()) {
+            std::cerr << "Error opening conflict_deps.log" << std::endl;
+        } else {
+            auto &out = deps_out;
+            unsigned cur = 0;
+            for (auto deps : m_conflict_dependencies) {
+                out << cur << ':'; 
+                for (auto d : deps) {
+                    out << ' ' << d;
+                }
+                out << '\n';
+                cur++;
+            }
+            deps_out.close();
+        }
+
         return status;
     }
 
