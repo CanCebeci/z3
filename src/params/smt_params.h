@@ -107,7 +107,7 @@ struct smt_params : public preprocessor_params,
     unsigned         m_threads = 1;
     unsigned         m_threads_max_conflicts = UINT_MAX;
     unsigned         m_threads_cube_frequency = 2;
-    bool             m_simplify_clauses = true;
+    bool             m_simplify_clauses = false;
     unsigned         m_tick = 1000;
     bool             m_display_features = false;
     bool             m_new_core2th_eq = true;
