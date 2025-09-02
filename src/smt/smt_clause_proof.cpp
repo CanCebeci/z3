@@ -158,13 +158,13 @@ namespace smt {
     }
 
     void clause_proof::get_literal_dependencies(literal l, std::set<unsigned> &deps_acc) {
-        // std::cerr << ctx.literal2expr(l) << '\n';
+        std::cerr << ctx.literal2expr(l) << '\n';
 
         SASSERT(ctx.get_assignment(l) != l_undef);
         SASSERT(ctx.get_assignment(l) == l_true);
 
         b_justification j = ctx.get_justification(l.var());
-        // std::cerr << j.get_kind()  << "\n";
+        std::cerr << j.get_kind()  << "\n";
 
         switch (j.get_kind()) {
         case b_justification::AXIOM:
@@ -209,6 +209,10 @@ namespace smt {
             if (pr == m.mk_const("cc-hack-assserted", m.mk_proof_sort())) {
                 // There are no dependencies for input assertions
                 /*NOP*/
+            } else if (pr == m.mk_const("cc-hack-learned-unit", m.mk_proof_sort())) {
+                auto ctj = dynamic_cast<unit_conflict_tracking_justification *>(j.get_justification());
+                SASSERT(ctj);
+                deps_acc.insert(ctj->get_conflict_id());
             } else {
                 SASSERT(false); // Not implemented yet
             }

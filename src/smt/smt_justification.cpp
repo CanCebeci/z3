@@ -40,6 +40,12 @@ namespace smt {
         return m_proof;
     }
 
+    unit_conflict_tracking_justification::unit_conflict_tracking_justification(context & ctx, unsigned cid, bool in_region):
+        m_conflict_id(cid) {
+        ast_manager &m = ctx.get_manager();
+        m_proof = m.mk_const("cc-hack-learned-unit", m.mk_proof_sort());
+    }
+
     unit_resolution_justification::unit_resolution_justification(context& ctx, 
                                                                  justification * js, 
                                                                  unsigned num_lits, 

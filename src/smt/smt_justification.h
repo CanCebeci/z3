@@ -114,6 +114,26 @@ namespace smt {
         char const * get_name() const override { return "proof-wrapper"; }
     };
 
+    class unit_conflict_tracking_justification : public justification {
+        unsigned m_conflict_id;
+        proof *m_proof;
+    public:
+        unit_conflict_tracking_justification(context & ctx, unsigned cid, bool in_region = true);
+
+        bool has_del_eh() const override {
+            return false;
+        }
+        
+        proof * mk_proof(conflict_resolution & cr) {
+            return m_proof;
+        };
+        
+        char const * get_name() const override { return "conflict-tracker"; }
+        unsigned get_conflict_id() {
+            return m_conflict_id;
+        }
+    };
+
     class unit_resolution_justification : public justification {
         justification * m_antecedent;
         unsigned        m_num_literals;
