@@ -1385,6 +1385,13 @@ namespace smt {
     */
     clause * context::mk_clause(unsigned num_lits, literal * lits, justification * j, clause_kind k, clause_del_eh * del_eh) {
         TRACE(mk_clause, display_literals_verbose(tout << "creating clause: " << literal_vector(num_lits, lits) << "\n", num_lits, lits) << "\n";);
+
+        // std::cerr << "context::mk_clause ";
+        // for (int i=0; i < num_lits; i++) {
+        //     std::cerr << literal2expr(lits[i]) << ' ';
+        // }
+        // std::cerr << '\n';
+
         m_clause_proof.add(num_lits, lits, k, j);
         literal_buffer simp_lits;
         switch (k) {

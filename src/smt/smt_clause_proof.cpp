@@ -158,13 +158,13 @@ namespace smt {
     }
 
     void clause_proof::get_literal_dependencies(literal l, std::set<unsigned> &deps_acc) {
-        std::cerr << ctx.literal2expr(l) << '\n';
+        // std::cerr << ctx.literal2expr(l) << '\n';
 
         SASSERT(ctx.get_assignment(l) != l_undef);
         SASSERT(ctx.get_assignment(l) == l_true);
 
         b_justification j = ctx.get_justification(l.var());
-        std::cerr << j.get_kind()  << "\n";
+        // std::cerr << j.get_kind()  << "\n";
 
         switch (j.get_kind()) {
         case b_justification::AXIOM:

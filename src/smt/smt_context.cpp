@@ -270,7 +270,7 @@ namespace smt {
 
     void context::set_justification(bool_var v, bool_var_data& d, b_justification const& j) {
         SASSERT(validate_justification(v, d, j));
-        std::cerr << "Set justification " << mk_pp(bool_var2expr(v), m) <<  " : " << j.get_kind() << '\n';
+        // std::cerr << "Set justification " << mk_pp(bool_var2expr(v), m) <<  " : " << j.get_kind() << '\n';
         d.set_justification(j);
     }
 
@@ -281,7 +281,7 @@ namespace smt {
         bool_var_data & d          = get_bdata(l.var());
         set_justification(l.var(), d, j);
 
-        std::cerr << "Assign " << literal2expr(l) <<  " : " << j.get_kind() << '\n';
+        // std::cerr << "Assign " << literal2expr(l) <<  " : " << j.get_kind() << '\n';
 
         d.m_scope_lvl              = m_scope_lvl;
         if (m_fparams.m_restart_adaptive && d.m_phase_available) {
@@ -4378,7 +4378,7 @@ namespace smt {
 
             clause *c = mk_clause(num_lits, lits, js, CLS_LEARNED);
             m_conflict_id2clause.push_back(c);
-            std::cerr << "Conflict id: " << conflict_id << '\n';
+            // std::cerr << "Conflict id: " << conflict_id << '\n';
 
             if (delay_forced_restart) {
                 SASSERT(num_lits == 1);

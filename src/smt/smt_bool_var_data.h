@@ -49,7 +49,9 @@ namespace smt {
 
         b_justification justification() const { return m_justification; }
 
-        void set_axiom() { m_justification = b_justification::mk_axiom(); }
+        void set_axiom() {
+            // std::cerr << "------ Set axiom -------\n\n";
+            m_justification = b_justification::mk_axiom(); }
 
         void set_null_justification() { m_justification = null_b_justification; }
 
