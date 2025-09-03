@@ -497,9 +497,8 @@ namespace smt {
                 antecedents.reset();
                 justification2literals_core(jst, antecedents);
                 m_ctx.get_clause_proof().propagate_conflict(consequent, *jst, antecedents);
-                return false;
             }
-   
+            return false;
         }
 
         unsigned idx = skip_literals_above_conflict_level();
