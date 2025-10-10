@@ -760,6 +760,11 @@ class qe_lite_cmd : public cmd {
     }
 };
 
+UNARY_CMD(proof_sketch_cmd, "proof-sketch", "<term>", "Add a step to the proof sketch", CPK_EXPR, expr *, {
+    expr_ref ne(ctx.m().mk_not(arg), ctx.m());
+    std::cout << "Proof sketch: " << mk_pp(arg, ctx.m()) << "\n";
+});
+
 void install_dbg_cmds(cmd_context &ctx) {
     ctx.insert(alloc(print_dimacs_cmd));
     ctx.insert(alloc(get_quantifier_body_cmd));
@@ -791,4 +796,5 @@ void install_dbg_cmds(cmd_context &ctx) {
     ctx.insert(alloc(eufi_cmd));
     ctx.insert(alloc(qel_cmd));
     ctx.insert(alloc(qe_lite_cmd));
+    ctx.insert(alloc(proof_sketch_cmd));
 }
