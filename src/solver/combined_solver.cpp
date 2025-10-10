@@ -173,6 +173,11 @@ public:
         m_solver2->assert_expr(t, a);
     }
 
+    void add_proof_sketch_step_core(expr * t) override {
+        m_solver1->add_proof_sketch_step(t);
+        m_solver2->add_proof_sketch_step(t);
+    }
+
     void push() override {
         switch_inc_mode();
         m_solver1->push();

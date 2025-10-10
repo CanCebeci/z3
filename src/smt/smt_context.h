@@ -1682,6 +1682,8 @@ namespace smt {
 
         void internalize_assertions();
 
+        void add_proof_sketch_step(expr * e);
+
         void push();
 
         void pop(unsigned num_scopes);

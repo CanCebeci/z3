@@ -520,6 +520,7 @@ public:
     void reset(bool finalize = false);
     void assert_expr(expr * t);
     void assert_expr(symbol const & name, expr * t);
+    void add_proof_sketch_step(expr * t);
     void push_assert_string(std::string const & s) { SASSERT(m_interactive_mode); m_assertion_strings.push_back(s); }
     void push();
     void push(unsigned n);

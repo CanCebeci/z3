@@ -3096,6 +3096,10 @@ namespace smt {
         assert_expr_core(e, pr);
     }
 
+    void context::add_proof_sketch_step(expr * e) {
+        std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n";
+    }
+
     class case_split_insert_trail : public trail {
         context& ctx;
         literal l;

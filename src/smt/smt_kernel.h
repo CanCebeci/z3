@@ -78,6 +78,11 @@ namespace smt {
         void assert_expr(expr * e, proof * pr);
 
         /**
+           \brief Add a step in the proof sketch used for debugging
+        */
+        void add_proof_sketch_step(expr * e);
+
+        /**
            \brief Return the number of asserted formulas in the kernel.
         */
         unsigned size() const;

@@ -158,6 +158,11 @@ namespace {
         void assert_expr_core(expr * t) override {
             m_context.assert_expr(t);
         }
+
+        void add_proof_sketch_step_core(expr * t) override {
+            m_context.add_proof_sketch_step(t);
+        }
+
         void set_phase(expr* e) override { m_context.set_phase(e); }
         phase* get_phase() override { return m_context.get_phase(); }
         void set_phase(phase* p) override { m_context.set_phase(p); }

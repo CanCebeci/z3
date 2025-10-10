@@ -212,7 +212,14 @@ void solver::assert_expr(expr* f, expr* t) {
     assert_expr_core2(fml, a);    
 }
 
+void solver::add_proof_sketch_step(expr* f) {
+    expr_ref fml(f, get_manager());
+    add_proof_sketch_step_core(fml);    
+}
 
+void solver::add_proof_sketch_step_core(expr *) {
+    std::cerr << "Solver does not support proof sketches: " << typeid(*this).name()  << std::endl;
+}
 
 void solver::collect_param_descrs(param_descrs & r) {
     solver_params sp(m_params);

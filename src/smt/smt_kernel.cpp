@@ -89,6 +89,10 @@ namespace smt {
         m_imp->m_kernel.assert_expr(e, pr);
     }
 
+    void kernel::add_proof_sketch_step(expr * e) {
+        m_imp->m_kernel.add_proof_sketch_step(e);
+    }
+
     unsigned kernel::size() const {
         return m_imp->m_kernel.get_num_asserted_formulas();
     }

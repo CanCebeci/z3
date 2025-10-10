@@ -761,8 +761,8 @@ class qe_lite_cmd : public cmd {
 };
 
 UNARY_CMD(proof_sketch_cmd, "proof-sketch", "<term>", "Add a step to the proof sketch", CPK_EXPR, expr *, {
-    expr_ref ne(ctx.m().mk_not(arg), ctx.m());
     std::cout << "Proof sketch: " << mk_pp(arg, ctx.m()) << "\n";
+    ctx.add_proof_sketch_step(arg);
 });
 
 void install_dbg_cmds(cmd_context &ctx) {

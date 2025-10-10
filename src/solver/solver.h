@@ -312,6 +312,10 @@ public:
 
     virtual lbool check_sat_core(unsigned num_assumptions, expr * const * assumptions) = 0;
 
+    void add_proof_sketch_step(expr* f);
+
+    virtual void add_proof_sketch_step_core(expr * f);
+
 protected:
 
     virtual lbool get_consequences_core(expr_ref_vector const& asms, expr_ref_vector const& vars, expr_ref_vector& consequences);

@@ -1580,6 +1580,15 @@ void cmd_context::assert_expr(symbol const & name, expr * t) {
         m_solver->assert_expr(t, ans);
 }
 
+void cmd_context::add_proof_sketch_step(expr * t) {
+    scoped_rlimit no_limit(m().limit(), 0);
+    if (!m_check_logic(t))
+        throw cmd_exception(m_check_logic.get_last_error());
+    m().inc_ref(t);
+    if (m_solver)
+        m_solver->add_proof_sketch_step(t);
+}
+
 void cmd_context::push() {
     m_check_sat_result = nullptr;
     init_manager();
