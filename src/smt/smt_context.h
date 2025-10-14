@@ -1682,8 +1682,6 @@ namespace smt {
 
         void internalize_assertions();
 
-        void add_proof_sketch_step(expr * e);
-
         void push();
 
         void pop(unsigned num_scopes);
@@ -1874,6 +1872,20 @@ namespace smt {
         func_decl * get_macro_interpretation(unsigned i, expr_ref & interp) const { return m_asserted_formulas.get_macro_interpretation(i, interp); }
         quantifier * get_macro_quantifier(func_decl * f) const { return m_asserted_formulas.get_macro_quantifier(f); }
         void insert_macro(func_decl * f, quantifier * m, proof * pr, expr_dependency * dep) { m_asserted_formulas.insert_macro(f, m, pr, dep); }
+
+    
+        // -----------------------------------
+        //
+        // Proof-sketch debugging
+        //
+        // -----------------------------------
+    
+    protected:
+        expr_ref_vector m_proof_sketch_steps;
+    
+    public:
+        void add_proof_sketch_step(expr * e);
+        void compare_to_proof_sketch();
     };
 
     struct pp_lit {

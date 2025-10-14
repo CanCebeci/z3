@@ -1487,6 +1487,11 @@ namespace smt {
             SASSERT(!lemma || j == 0 || !j->in_region());
             clause * cls = clause::mk(m, num_lits, lits, k, j, del_eh, save_atoms, m_bool_var2expr.data());
             m_clause_proof.add(*cls, &simp_lits);
+            // if (lemma)
+            //     std::cout << "LEMMA: ";
+            // else
+            //     std::cout << "AXIOM: ";
+            // display_clause_smt2(std::cout, *cls); std::cout << "\n";
             if (lemma) {
                 cls->set_activity(activity);
                 if (k == CLS_LEARNED) {

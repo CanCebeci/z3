@@ -82,7 +82,8 @@ namespace smt {
         m_mk_bool_var_trail(*this),
         m_mk_enode_trail(*this),
         m_mk_lambda_trail(*this),
-        m_lemma_visitor(m) {
+        m_lemma_visitor(m),
+        m_proof_sketch_steps(m) {
 
         SASSERT(m_scope_lvl == 0);
         SASSERT(m_base_lvl == 0);
@@ -3098,6 +3099,11 @@ namespace smt {
 
     void context::add_proof_sketch_step(expr * e) {
         std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n";
+
+        // For now, each proof step is an expression that is implied by the input formula.
+        // Is the expression internalized?
+        m_proof_sketch_steps.push_back(e);
+
     }
 
     class case_split_insert_trail : public trail {
@@ -4052,6 +4058,8 @@ namespace smt {
             if (m_base_lvl == m_scope_lvl && m_fparams.m_simplify_clauses)
                 simplify_clauses();
 
+            compare_to_proof_sketch();
+
             if (!decide()) {
                 if (inconsistent()) 
                     return l_false;
@@ -4070,6 +4078,44 @@ namespace smt {
 
             if (resource_limits_exceeded() && !inconsistent()) {
                 return l_undef;
+            }
+        }
+    }
+
+    void context::compare_to_proof_sketch() {
+        unsigned step_idx = 0;
+        for (expr *e : m_proof_sketch_steps) {
+            std::cout << "Comparing\n";
+            step_idx++;
+
+            // //! tmp
+            // std::cout << "assignments_start\n";
+            // for (literal lit : m_assigned_literals) {
+            //     expr_ref n(m);
+            //     literal2expr(lit, n);
+            //     std::cout << n << '\n';
+            // }
+            // std::cout << "assignments_end\n";
+
+            // bool_var v = get_bool_var_of_id_option(e->id());
+            // if (v == null_bool_var) {
+            //     cout << "WARNING: Proof step not internalized: " << mk_pp(e, m) << "\n";
+            // }
+
+            if (!b_internalized(e)) {
+                std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
+                continue;
+            }
+
+            // Check if e is a unit
+            literal l = get_literal(e);
+            lbool b = get_assignment(l);
+            if (b != l_undef && get_assign_level(l) == 0) {
+                if (b == l_true) {
+                    std::cout << "Step " << step_idx << " established\n";
+                } else {
+                    std::cout << "WARNING: Proof step " << step_idx << " refuted: " << mk_pp(e, m) << "\n";
+                }
             }
         }
     }
