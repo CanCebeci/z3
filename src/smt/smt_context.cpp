@@ -3098,11 +3098,14 @@ namespace smt {
     }
 
     void context::add_proof_sketch_step(expr * e) {
-        std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n";
+        // A proof step is an expression that is implied by the input formula.
 
-        // For now, each proof step is an expression that is implied by the input formula.
-        // Is the expression internalized?
-        m_proof_sketch_steps.push_back(e);
+        std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n" << e->get_id() <<"\n";
+        expr_ref e_r = m_asserted_formulas.rewrite(e);
+        // internalize(e_r, false);  //! Might change solver behavior !
+        std::cout << "e_r: " << mk_pp(e_r, m) << "\n" << e_r->get_id() <<"\n";
+        m_proof_sketch_steps.push_back(e_r);
+        m_proof_sketch_established.push_back(false);
 
     }
 
@@ -4085,24 +4088,19 @@ namespace smt {
     void context::compare_to_proof_sketch() {
         unsigned step_idx = 0;
         for (expr *e : m_proof_sketch_steps) {
-            std::cout << "Comparing\n";
+            // std::cout << "Comparing\n";
             step_idx++;
 
-            // //! tmp
+            // // //! tmp
             // std::cout << "assignments_start\n";
             // for (literal lit : m_assigned_literals) {
             //     expr_ref n(m);
             //     literal2expr(lit, n);
-            //     std::cout << n << '\n';
+            //     std::cout << n << '\n' << n->get_id() << '\n';
             // }
             // std::cout << "assignments_end\n";
 
-            // bool_var v = get_bool_var_of_id_option(e->id());
-            // if (v == null_bool_var) {
-            //     cout << "WARNING: Proof step not internalized: " << mk_pp(e, m) << "\n";
-            // }
-
-            if (!b_internalized(e)) {
+            if (!lit_internalized(e)) {
                 std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
                 continue;
             }
@@ -4111,8 +4109,12 @@ namespace smt {
             literal l = get_literal(e);
             lbool b = get_assignment(l);
             if (b != l_undef && get_assign_level(l) == 0) {
+            // if (b != l_undef) {
                 if (b == l_true) {
-                    std::cout << "Step " << step_idx << " established\n";
+                    if (!m_proof_sketch_established[step_idx - 1]) {
+                        std::cout << "Step " << step_idx << " established\n";
+                        m_proof_sketch_established[step_idx - 1] = true;
+                    }
                 } else {
                     std::cout << "WARNING: Proof step " << step_idx << " refuted: " << mk_pp(e, m) << "\n";
                 }
