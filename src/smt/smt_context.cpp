@@ -3101,10 +3101,10 @@ namespace smt {
         // A proof step is an expression that is implied by the input formula.
 
         std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n" << e->get_id() <<"\n";
-        expr_ref e_r = m_asserted_formulas.rewrite(e);
+        
         // internalize(e_r, false);  //! Might change solver behavior !
-        std::cout << "e_r: " << mk_pp(e_r, m) << "\n" << e_r->get_id() <<"\n";
-        m_proof_sketch_steps.push_back(e_r);
+
+        m_proof_sketch_steps.push_back(e);
         m_proof_sketch_established.push_back(false);
 
     }
@@ -4018,6 +4018,8 @@ namespace smt {
 
                 tick(counter);
 
+                compare_to_proof_sketch();
+
                 if (!resolve_conflict())
                     return l_false;
 
@@ -4087,9 +4089,12 @@ namespace smt {
 
     void context::compare_to_proof_sketch() {
         unsigned step_idx = 0;
-        for (expr *e : m_proof_sketch_steps) {
-            // std::cout << "Comparing\n";
+        for (expr *_e : m_proof_sketch_steps) {
             step_idx++;
+            if (m_proof_sketch_established[step_idx - 1])
+                continue;
+
+            // std::cout << "Comparing\n";
 
             // // //! tmp
             // std::cout << "assignments_start\n";
@@ -4100,8 +4105,10 @@ namespace smt {
             // }
             // std::cout << "assignments_end\n";
 
+            expr_ref e = m_asserted_formulas.rewrite(_e);
+
             if (!lit_internalized(e)) {
-                std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
+                // std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
                 continue;
             }
 
@@ -4109,12 +4116,9 @@ namespace smt {
             literal l = get_literal(e);
             lbool b = get_assignment(l);
             if (b != l_undef && get_assign_level(l) == 0) {
-            // if (b != l_undef) {
                 if (b == l_true) {
-                    if (!m_proof_sketch_established[step_idx - 1]) {
-                        std::cout << "Step " << step_idx << " established\n";
-                        m_proof_sketch_established[step_idx - 1] = true;
-                    }
+                    std::cout << "Step " << step_idx << " established\n";
+                    m_proof_sketch_established[step_idx - 1] = true;
                 } else {
                     std::cout << "WARNING: Proof step " << step_idx << " refuted: " << mk_pp(e, m) << "\n";
                 }
