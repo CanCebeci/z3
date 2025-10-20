@@ -1882,6 +1882,7 @@ namespace smt {
     
     protected:
         expr_ref_vector m_proof_sketch_steps;
+        bool_vector m_proof_sketch_established;
     
     public:
         void add_proof_sketch_step(expr * e);

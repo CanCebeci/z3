@@ -592,6 +592,12 @@ unsigned asserted_formulas::propagate_values(unsigned i) {
     return (n != new_n) ? 1 : 0;
 }
 
+expr_ref asserted_formulas::rewrite(expr *e) {
+    expr_ref res(m);
+    m_rewriter(e, res);
+    return res;
+}
+
 bool asserted_formulas::update_substitution(expr* n, proof* pr) {
     expr* lhs, *rhs, *n1;
     proof_ref pr1(m);

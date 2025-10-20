@@ -272,6 +272,7 @@ public:
     void commit(unsigned new_qhead); 
     expr *  get_formula(unsigned idx) const { return m_formulas[idx].fml(); }
     proof * get_formula_proof(unsigned idx) const { return m_formulas[idx].pr(); }
+    expr_ref rewrite(expr *e);
     
     params_ref const& get_params() const { return m_params; }
     void get_assertions(ptr_vector<expr> & result) const;
