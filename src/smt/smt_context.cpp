@@ -4105,7 +4105,10 @@ namespace smt {
             // }
             // std::cout << "assignments_end\n";
 
-            expr_ref e = m_asserted_formulas.rewrite(_e);
+            expr * e = _e;
+            if (!lit_internalized(e)) {
+                e = m_asserted_formulas.rewrite(_e);
+            }
 
             if (!lit_internalized(e)) {
                 // std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
