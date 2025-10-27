@@ -688,12 +688,27 @@ namespace smt {
             out << " decision";
         out << " ";
         display_compact_j(out, j);
+
+        // auto tmp = m.m_trace_stream;
+        // m.m_trace_stream = nullptr;
+        out << "\n----assign_start\n";
+        display_literal_smt2(out, l);
+        out << "\nassign_end----\n";
+        // m.m_trace_stream = tmp;
+
+        if (get_assign_level(l) == 0) {
+
+            std::cout << "\n----unit\n";
+            display_literal_smt2(std::cout, l);
+            std::cout << '\n';  
+
+        }
     }
 
     std::ostream& operator<<(std::ostream& out, enode_pp const& p) {
         ast_manager& m = p.ctx.get_manager();
         enode* n = p.n;
-        return out << n->get_owner_id() << ": " << mk_bounded_pp(n->get_expr(), m);
+        return out << n->get_owner_id() << ": " << mk_bounded_pp(n->get_expr(), m); 
     }
 
     std::ostream& operator<<(std::ostream& out, enode_eq_pp const& p) {

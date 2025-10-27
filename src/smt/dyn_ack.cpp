@@ -409,6 +409,10 @@ namespace smt {
         m_context.m_stats.m_num_dyn_ack++;
         TRACE(dyn_ack_inst, tout << "dyn_ack: " << n1->get_id() << " " << n2->get_id() << "\n";);
         TRACE(dyn_ack, tout << "expanding Ackermann's rule for:\n" << mk_pp(n1, m) << "\n" << mk_pp(n2, m) << "\n";);
+        
+        
+        // std::cout << "expanding Ackermann's rule for:\n" << mk_pp(n1, m) << "\n" << mk_pp(n2, m) << "\n";
+        
         unsigned num_args = n1->get_num_args();
         literal_buffer lits;
         for (unsigned i = 0; i < num_args; i++) {
@@ -467,6 +471,11 @@ namespace smt {
               << mk_pp(n2, m) << "\n"
               << mk_pp(r,  m) << "\n";
               );
+
+        // std::cout << "expanding Ackermann's rule for:\n" << mk_pp(n1, m) << "\n" 
+        //       << mk_pp(n2, m) << "\n"
+        //       << mk_pp(r,  m) << "\n";
+
         app_triple tr(n1, n2, r);
         SASSERT(m_triple.m_app2num_occs.contains(n1, n2, r));
         m_triple.m_app2num_occs.erase(n1, n2, r);

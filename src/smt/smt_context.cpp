@@ -3100,7 +3100,7 @@ namespace smt {
     void context::add_proof_sketch_step(expr * e) {
         // A proof step is an expression that is implied by the input formula.
 
-        std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n" << e->get_id() <<"\n";
+        // std::cout << "smt::context::add_proof_sketch_step: " << mk_pp(e, m) << "\n" << e->get_id() <<"\n";
         
         // internalize(e_r, false);  //! Might change solver behavior !
 

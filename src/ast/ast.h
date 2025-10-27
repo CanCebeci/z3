@@ -1521,7 +1521,9 @@ protected:
     unsigned                  m_fresh_id;
     bool                      m_debug_ref_count;
     u_map<unsigned>           m_debug_free_indices;
+public:
     std::fstream*             m_trace_stream = nullptr;
+protected:
     bool                      m_trace_stream_owner = false;
     bool                      m_has_type_vars = false;
 #ifdef Z3DEBUG
