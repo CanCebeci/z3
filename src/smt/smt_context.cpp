@@ -4087,6 +4087,24 @@ namespace smt {
         }
     }
 
+    bool context::ps_check_learned_unit(expr * e) {
+        if (!lit_internalized(e)) {
+            return false;
+        }
+
+        // Check if e is a learned unit
+        literal l = get_literal(e);
+        lbool b = get_assignment(l);
+        if (b != l_undef && get_assign_level(l) == 0) {
+            if (b == l_true) {
+                return true;
+            } else {
+                // std::cout << "WARNING: Proof step " << step_idx << " refuted: " << mk_pp(e, m) << "\n";
+            }
+        }
+        return false;
+    }
+
     void context::compare_to_proof_sketch() {
         unsigned step_idx = 0;
         for (expr *_e : m_proof_sketch_steps) {
@@ -4105,27 +4123,20 @@ namespace smt {
             // }
             // std::cout << "assignments_end\n";
 
-            expr * e = _e;
-            if (!lit_internalized(e)) {
-                e = m_asserted_formulas.rewrite(_e);
+            expr_ref  e(_e, m);
+            if (ps_check_learned_unit(e)) {
+                goto established;
             }
+                
+            e = m_asserted_formulas.rewrite(_e);
+            if (ps_check_learned_unit(e)) {
+                goto established;
+            }
+            continue;
 
-            if (!lit_internalized(e)) {
-                // std::cout << "WARNING: Proof step " << step_idx << " not internalized: " << mk_pp(e, m) << "\n";
-                continue;
-            }
-
-            // Check if e is a unit
-            literal l = get_literal(e);
-            lbool b = get_assignment(l);
-            if (b != l_undef && get_assign_level(l) == 0) {
-                if (b == l_true) {
-                    std::cout << "Step " << step_idx << " established\n";
-                    m_proof_sketch_established[step_idx - 1] = true;
-                } else {
-                    std::cout << "WARNING: Proof step " << step_idx << " refuted: " << mk_pp(e, m) << "\n";
-                }
-            }
+    established:
+                m_proof_sketch_established[step_idx - 1] = true;
+                std::cout << "Step " << step_idx << " established\n";
         }
     }
 
