@@ -696,13 +696,13 @@ namespace smt {
         out << "\nassign_end----\n";
         // m.m_trace_stream = tmp;
 
-        if (get_assign_level(l) == 0) {
+        // if (get_assign_level(l) == 0) {
 
-            std::cout << "\n----unit\n";
-            display_literal_smt2(std::cout, l);
-            std::cout << '\n';  
+        //     std::cout << "\n----unit\n";
+        //     display_literal_smt2(std::cout, l);
+        //     std::cout << '\n';  
 
-        }
+        // }
     }
 
     std::ostream& operator<<(std::ostream& out, enode_pp const& p) {

@@ -4087,7 +4087,6 @@ namespace smt {
 
     bool context::ps_check_learned_unit(expr * e) {
         if (!lit_internalized(e)) {
-            std::cout << "not internalized ";
             return false;
         }
 
@@ -4136,10 +4135,6 @@ namespace smt {
             if (m_proof_sketch_established[step_idx - 1])
                 continue;
 
-            if (step_idx != 6 && step_idx != 5) continue;
-            std::cout << "Step " << step_idx << ": ";
-            // std::cout << "Comparing\n";
-
             // // //! tmp
             // std::cout << "assignments_start\n";
             // for (literal lit : m_assigned_literals) {
@@ -4168,8 +4163,7 @@ namespace smt {
             if (ps_check_eq_prop(e)) {
                 goto established;
             }
-
-            std::cout << "\n";
+            
             continue;
     established:
                 m_proof_sketch_established[step_idx - 1] = true;
