@@ -1886,7 +1886,8 @@ namespace smt {
     
     public:
         void add_proof_sketch_step(expr * e);
-        bool ps_check_learned_unit(expr * e); // helper for compare_to_proof_sketch
+        bool ps_check_learned_unit(expr * e);   // helper for compare_to_proof_sketch
+        bool ps_check_eq_prop(expr *e);         // helper for compare_to_proof_sketch
         void compare_to_proof_sketch();
     };
 

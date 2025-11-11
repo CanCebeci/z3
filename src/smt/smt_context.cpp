@@ -4018,8 +4018,6 @@ namespace smt {
 
                 tick(counter);
 
-                compare_to_proof_sketch();
-
                 if (!resolve_conflict())
                     return l_false;
 
@@ -4089,6 +4087,7 @@ namespace smt {
 
     bool context::ps_check_learned_unit(expr * e) {
         if (!lit_internalized(e)) {
+            std::cout << "not internalized ";
             return false;
         }
 
@@ -4105,6 +4104,31 @@ namespace smt {
         return false;
     }
 
+    bool context::ps_check_eq_prop(expr *e) {
+        //! We need to somehow save a version of the context before the proof step is internalized.
+        //! We'll just assume internalization does not change behavior for now..
+
+        bool res = false;
+        push_scope();
+
+        internalize(e, true);
+        literal l = get_literal(e);
+
+        assign(l, nullptr);
+        if (inconsistent()) {
+            res = true;
+        }
+        if (!res && !propagate_atoms()) {
+            res = true;
+        }
+        if (!res && !propagate_eqs()) {
+            res = true;
+        }
+
+        pop_scope(1);
+        return res;
+    }
+
     void context::compare_to_proof_sketch() {
         unsigned step_idx = 0;
         for (expr *_e : m_proof_sketch_steps) {
@@ -4112,6 +4136,8 @@ namespace smt {
             if (m_proof_sketch_established[step_idx - 1])
                 continue;
 
+            if (step_idx != 6 && step_idx != 5) continue;
+            std::cout << "Step " << step_idx << ": ";
             // std::cout << "Comparing\n";
 
             // // //! tmp
@@ -4132,8 +4158,19 @@ namespace smt {
             if (ps_check_learned_unit(e)) {
                 goto established;
             }
-            continue;
 
+            // try equality propagation.
+            if (ps_check_eq_prop(_e)) {
+                goto established;
+            }
+
+            // try equality propagation.
+            if (ps_check_eq_prop(e)) {
+                goto established;
+            }
+
+            std::cout << "\n";
+            continue;
     established:
                 m_proof_sketch_established[step_idx - 1] = true;
                 std::cout << "Step " << step_idx << " established\n";
