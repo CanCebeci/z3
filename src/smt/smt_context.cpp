@@ -4127,7 +4127,7 @@ namespace smt {
         internalize(e, true);
         literal l = get_literal(e);
 
-        assign(l, nullptr);
+        assign(~l, nullptr);
         if (inconsistent()) {
             res = true;
         }
@@ -4175,21 +4175,20 @@ namespace smt {
             if (ps_check_learned_unit(e)) {
                 goto established;
             }
-
-            // try equality propagation.
-            if (ps_propagate_limited(_e)) {
-                goto established;
-            }
-
-            // try equality propagation.
-            if (ps_propagate_limited(e)) {
-                goto established;
+            if (m_scope_lvl == 0) {
+            // if (true) {
+                if (ps_propagate_limited(_e)) {
+                    goto established;
+                }
+                if (ps_propagate_limited(e)) {
+                    goto established;
+                }
             }
 
             continue;
     established:
                 m_proof_sketch_established[step_idx - 1] = true;
-                std::cout << "Step " << step_idx << " established\n";
+                std::cout << "Step " << step_idx << " established (scope_lvl: "<< m_scope_lvl<<"\n";
         }
     }
 
