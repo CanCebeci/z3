@@ -1696,6 +1696,20 @@ namespace smt {
             !m_th_diseq_propagation_queue.empty();
     }
 
+    bool context::ps_can_propagate_limited() const {
+        //! we should be able to toggle these on and off
+        return
+            m_qhead != m_assigned_literals.size() ||
+            // m_relevancy_propagator->can_propagate() ||
+            !m_atom_propagation_queue.empty() ||
+            // m_qmanager->can_propagate() ||
+            // can_theories_propagate() ||
+            !m_eq_propagation_queue.empty() ||
+            // !m_th_eq_propagation_queue.empty() ||
+            // !m_th_diseq_propagation_queue.empty() ||
+            false;
+    }
+
     /**
        \brief unit propagation.
        Cancelation is not safe during propagation at base level because
@@ -4103,7 +4117,7 @@ namespace smt {
         return false;
     }
 
-    bool context::ps_check_eq_prop(expr *e) {
+    bool context::ps_propagate_limited(expr *e) {
         //! We need to somehow save a version of the context before the proof step is internalized.
         //! We'll just assume internalization does not change behavior for now..
 
@@ -4117,11 +4131,19 @@ namespace smt {
         if (inconsistent()) {
             res = true;
         }
-        if (!res && !propagate_atoms()) {
-            res = true;
-        }
-        if (!res && !propagate_eqs()) {
-            res = true;
+
+        // we should be able to toggle these on and off.
+        // we should also do mutliple rounds.
+        while (!res && ps_can_propagate_limited()) {
+            if (!res && !bcp()) {
+                res = true;
+            }
+            if (!res && !propagate_atoms()) {
+                res = true;
+            }
+            if (!res && !propagate_eqs()) {
+                res = true;
+            }   
         }
 
         pop_scope(1);
@@ -4155,15 +4177,15 @@ namespace smt {
             }
 
             // try equality propagation.
-            if (ps_check_eq_prop(_e)) {
+            if (ps_propagate_limited(_e)) {
                 goto established;
             }
 
             // try equality propagation.
-            if (ps_check_eq_prop(e)) {
+            if (ps_propagate_limited(e)) {
                 goto established;
             }
-            
+
             continue;
     established:
                 m_proof_sketch_established[step_idx - 1] = true;
