@@ -98,6 +98,36 @@ namespace smt {
             m_fparams.m_relevancy_lemma = false;
 
         m_model_generator->set_context(this);
+
+        setup_proof_sketches();
+    }
+
+
+    std::vector<std::string> splitCSV(const std::string& input) {
+        std::vector<std::string> result;
+        std::stringstream ss(input);
+        std::string item;
+
+        while (std::getline(ss, item, ',')) {
+            // Optional: trim spaces
+            if (!item.empty() && item.front() == ' ')
+                item.erase(0, 1);
+            result.push_back(item);
+        }
+        return result;
+    }
+
+    void context::setup_proof_sketches() {
+        for (std::string s : splitCSV(m_fparams.m_proof_sketch_propagators)) {
+            if (s == "assign") 
+                m_proof_sketch_propagators.push_back(&smt::context::propagate_atoms);
+            else if (s == "bcp")
+                m_proof_sketch_propagators.push_back(&smt::context::bcp);
+            else if (s == "eqs")
+                m_proof_sketch_propagators.push_back(&smt::context::propagate_eqs);
+            else 
+                std::cerr << "Unknown proof sketch propagator: " << s << "\n";
+        }
     }
 
     /**
@@ -1696,15 +1726,19 @@ namespace smt {
             !m_th_diseq_propagation_queue.empty();
     }
 
+    template <typename T>
+    bool vec_contains(const std::vector<T>& v, const T& value) {
+        return std::find(v.begin(), v.end(), value) != v.end();
+    }
+
     bool context::ps_can_propagate_limited() const {
-        //! we should be able to toggle these on and off
         return
-            m_qhead != m_assigned_literals.size() ||
+            (vec_contains(m_proof_sketch_propagators, &smt::context::bcp) && m_qhead != m_assigned_literals.size()) ||
             // m_relevancy_propagator->can_propagate() ||
-            !m_atom_propagation_queue.empty() ||
+            (vec_contains(m_proof_sketch_propagators, &smt::context::propagate_atoms) && !m_atom_propagation_queue.empty()) ||
             // m_qmanager->can_propagate() ||
             // can_theories_propagate() ||
-            !m_eq_propagation_queue.empty() ||
+            (vec_contains(m_proof_sketch_propagators, &smt::context::propagate_eqs) && !m_eq_propagation_queue.empty()) ||
             // !m_th_eq_propagation_queue.empty() ||
             // !m_th_diseq_propagation_queue.empty() ||
             false;
@@ -4132,18 +4166,12 @@ namespace smt {
             res = true;
         }
 
-        // we should be able to toggle these on and off.
-        // we should also do mutliple rounds.
         while (!res && ps_can_propagate_limited()) {
-            if (!res && !bcp()) {
-                res = true;
+            for (auto f : m_proof_sketch_propagators) {
+                if (!res && !(this->*f)()) {
+                    res = true;
+                }
             }
-            if (!res && !propagate_atoms()) {
-                res = true;
-            }
-            if (!res && !propagate_eqs()) {
-                res = true;
-            }   
         }
 
         pop_scope(1);
@@ -4156,6 +4184,9 @@ namespace smt {
             step_idx++;
             if (m_proof_sketch_established[step_idx - 1])
                 continue;
+
+
+            //! Validate that these don't disappear.
 
             // // //! tmp
             // std::cout << "assignments_start\n";
@@ -4176,7 +4207,6 @@ namespace smt {
                 goto established;
             }
             if (m_scope_lvl == 0) {
-            // if (true) {
                 if (ps_propagate_limited(_e)) {
                     goto established;
                 }
@@ -4188,7 +4218,7 @@ namespace smt {
             continue;
     established:
                 m_proof_sketch_established[step_idx - 1] = true;
-                std::cout << "Step " << step_idx << " established (scope_lvl: "<< m_scope_lvl<<"\n";
+                std::cout << "Step " << step_idx << " established (scope_lvl: "<< m_scope_lvl<<")\n";
         }
     }
 

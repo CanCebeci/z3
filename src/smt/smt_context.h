@@ -1883,13 +1883,16 @@ namespace smt {
     protected:
         expr_ref_vector m_proof_sketch_steps;
         bool_vector m_proof_sketch_established;
-    
-    public:
-        void add_proof_sketch_step(expr * e);
+        std::vector<bool(smt::context::*)()> m_proof_sketch_propagators;
+
+        void setup_proof_sketches();
         bool ps_check_learned_unit(expr * e);   // helper for compare_to_proof_sketch
         bool ps_propagate_limited(expr *e);     // helper for compare_to_proof_sketch
         bool ps_can_propagate_limited() const;        // helper for compare_to_proof_sketch
         void compare_to_proof_sketch();
+    
+    public:
+        void add_proof_sketch_step(expr * e);
     };
 
     struct pp_lit {

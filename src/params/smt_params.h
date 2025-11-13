@@ -219,6 +219,7 @@ struct smt_params : public preprocessor_params,
     //
     // -----------------------------------
     bool             m_core_validate = false;
+    std::string      m_proof_sketch_propagators;
 
     // -----------------------------------
     //
