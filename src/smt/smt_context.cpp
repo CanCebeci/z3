@@ -1672,6 +1672,7 @@ namespace smt {
 
     bool context::propagate_theories() {
         for (theory * t : m_theory_set) {
+            std::cerr << "Propagating " << t->get_name() << "\n";
             t->propagate();
             if (inconsistent())
                 return false;
@@ -4156,6 +4157,8 @@ namespace smt {
         //! We'll just assume internalization does not change behavior for now..
 
         bool res = false;
+        if (m.has_trace_stream() && !m_is_auxiliary)
+            m.trace_stream() << "[ps-propagate]";
         push_scope();
 
         internalize(e, true);
@@ -4207,9 +4210,9 @@ namespace smt {
                 goto established;
             }
             if (m_scope_lvl == 0) {
-                if (ps_propagate_limited(_e)) {
-                    goto established;
-                }
+                // if (ps_propagate_limited(_e)) {
+                //     goto established;
+                // }
                 if (ps_propagate_limited(e)) {
                     goto established;
                 }
