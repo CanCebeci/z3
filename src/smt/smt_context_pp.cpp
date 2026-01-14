@@ -682,7 +682,7 @@ namespace smt {
         SASSERT(m.has_trace_stream());
         std::ostream & out = m.trace_stream();
         ast_manager::suspend_trace _st(m);
-        out << "[assign] ";
+        out << "[assign] " << l << " ";
         display_literal(out, l);
         if (decision)
             out << " decision";

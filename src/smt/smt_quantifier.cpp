@@ -266,12 +266,18 @@ namespace smt {
                 }
 
                 // At this point all relevant equalities for the match are logged.
-                out << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id();
+                out << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id() << " "<< q->get_qid();
                 for (unsigned i = 0; i < num_bindings; i++) {
                     // I don't want to use mk_pp because it creates expressions for pretty printing.
                     // This nasty side-effect may change the behavior of Z3.
                     out << " #" << bindings[num_bindings - i - 1]->get_owner_id();
                 }
+                // if (/*q->get_id() == 18738 || q->get_id() == 29167 || */q->get_id() == 30399) {
+                //     for (unsigned i = 0; i < num_bindings; i++) {
+
+                //         out << " " << mk_pp(bindings[num_bindings - i - 1]->get_expr(), m());
+                //     }
+                // }
                 out << " ;";
                 for (auto n : used_enodes) {
                     enode *orig = std::get<0>(n);

@@ -1672,7 +1672,7 @@ namespace smt {
 
     bool context::propagate_theories() {
         for (theory * t : m_theory_set) {
-            std::cerr << "Propagating " << t->get_name() << "\n";
+            // std::cerr << "Propagating " << t->get_name() << "\n";
             t->propagate();
             if (inconsistent())
                 return false;
