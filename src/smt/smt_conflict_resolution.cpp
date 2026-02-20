@@ -348,6 +348,17 @@ namespace smt {
         antecedents.reset();
         justification2literals_core(js, antecedents);
         m_ctx.get_clause_proof().propagate(consequent, *js, antecedents);
+        //! CC: instrumentation
+        // if (m.has_trace_stream() && consequent == false_literal) {
+        if (m.has_trace_stream()) {
+            literal_vector &lits = antecedents;
+            m.trace_stream() << " --- conflict --- \n";
+            m_ctx.display_literals_verbose(m.trace_stream() << lits << "\n", lits.size(), &lits[0]);
+            m.trace_stream() << "\n"; 
+            m_ctx.display_literals_smt2(m.trace_stream(), lits.size(), &lits[0]);
+            m.trace_stream() << " --- end of conflict --- \n";
+        }
+
         for (literal l : antecedents)
             process_antecedent(l, num_marks);
         (void)consequent;

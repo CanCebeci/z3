@@ -1084,6 +1084,7 @@ namespace smt {
         SASSERT(is_app(n));
         enode * e             = m_app2enode[n_id];
         m_app2enode[n_id]     = nullptr;
+        // std::cerr << "undo_enode: #" << n->get_id() << "\n" << mk_pp(n, m) << "\n";
         if (e->is_cgr() && !e->is_true_eq() && e->is_cgc_enabled()) {
             SASSERT(m_cg_table.contains_ptr(e));
             m_cg_table.erase(e);
@@ -1397,7 +1398,7 @@ namespace smt {
     clause * context::mk_clause(unsigned num_lits, literal * lits, justification * j, clause_kind k, clause_del_eh * del_eh) {
         TRACE(mk_clause, display_literals_verbose(tout << "creating clause: " << literal_vector(num_lits, lits) << "\n", num_lits, lits) << "\n";);
         if (m.has_trace_stream()) {
-            m.trace_stream() << "[--- mk-clause ---] ";
+            m.trace_stream() << "[--- mk-clause ---] " << k << "\n";
             // display_literals_smt2(m.trace_stream() << literal_vector(num_lits, lits) << "\n", num_lits, lits);
             display_literals_verbose(m.trace_stream() << literal_vector(num_lits, lits) << "\n", num_lits, lits);
             m.trace_stream() << "\n";

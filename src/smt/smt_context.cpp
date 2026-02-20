@@ -2371,6 +2371,7 @@ namespace smt {
                         });
                         literal l(v, sign);
                         cls->set_literal(j, l);
+                        // if (cls->get_kind() == CLS_TH_LEMMA || cls->get_kind() == CLS_LEARNED)
                         if (cls->get_kind() == CLS_TH_LEMMA)
                             mark_as_relevant(l);
                     }
@@ -4378,6 +4379,10 @@ namespace smt {
         m_th_eq_propagation_queue.reset();
         m_th_diseq_propagation_queue.reset();
         if (m_conflict_resolution->resolve(m_conflict, m_not_l)) {
+            // // !!
+            // m_dyn_ack_manager.propagate_eh();
+
+            
             unsigned new_lvl = m_conflict_resolution->get_new_scope_lvl();
             unsigned num_lits = m_conflict_resolution->get_lemma_num_literals();
             literal * lits    = m_conflict_resolution->get_lemma_literals();
