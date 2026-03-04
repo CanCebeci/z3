@@ -210,6 +210,8 @@ namespace smt {
                 
         TRACE(qi_queue_profile, tout << q->get_qid() << ", gen: " << generation << " " << *f << " cost: " << ent.m_cost << "\n";);
 
+        std::cout << "----- begin instance: " << q->get_qid() << ", gen: " << generation << "\n";
+
         q::quantifier_stat * stat = m_qm.get_stat(q);
 
         if (m_checker.is_sat(q->get_expr(), num_bindings, bindings)) {
@@ -366,6 +368,8 @@ namespace smt {
 
         if (m.has_trace_stream())
             m.trace_stream() << "[end-of-instance]\n";
+
+        std::cout << "----- end instance: " << q->get_qid() << ", gen: " << generation << "\n";
 
     }
 

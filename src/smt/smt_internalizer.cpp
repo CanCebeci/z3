@@ -1016,6 +1016,9 @@ namespace smt {
             e->mark_as_interpreted();
         TRACE(mk_var_bug, tout << "mk_enode: " << id << "\n";);
         TRACE(generation, tout << "mk_enode: " << id << " " << generation << "\n";);
+
+        std::cout << "mk_enode: #" << id << " " << mk_pp(n, m) << "gen: " << generation << "\n";
+
         m_app2enode.setx(id, e, nullptr);
         m_e_internalized_stack.push_back(n);
         m_trail_stack.push_back(&m_mk_enode_trail);

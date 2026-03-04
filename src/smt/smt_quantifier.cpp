@@ -267,6 +267,7 @@ namespace smt {
 
                 // At this point all relevant equalities for the match are logged.
                 out << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id() << " "<< q->get_qid();
+
                 for (unsigned i = 0; i < num_bindings; i++) {
                     // I don't want to use mk_pp because it creates expressions for pretty printing.
                     // This nasty side-effect may change the behavior of Z3.
@@ -312,6 +313,28 @@ namespace smt {
                 if (has_trace_stream()) {
                     log_add_instance(f, q, pat, num_bindings, bindings, used_enodes);
                 }
+
+                // At this point all relevant equalities for the match are logged.
+                std::cout << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id() << " "<< q->get_qid();
+
+                for (unsigned i = 0; i < num_bindings; i++) {
+                    // I don't want to use mk_pp because it creates expressions for pretty printing.
+                    // This nasty side-effect may change the behavior of Z3.
+                    std::cout << " #" << bindings[num_bindings - i - 1]->get_owner_id();
+                }
+                std::cout << " ;";
+                for (auto n : used_enodes) {
+                    enode *orig = std::get<0>(n);
+                    enode *substituted = std::get<1>(n);
+                    if (orig == nullptr)
+                        std::cout << " #" << substituted->get_owner_id();
+                    else {
+                        std::cout << " (#" << orig->get_owner_id() << " #" << substituted->get_owner_id() << ")";
+                    }
+                }
+                std::cout << "\n";
+
+
                 m_qi_queue.insert(f, pat, max_generation, min_top_generation, max_top_generation); // TODO
                 m_num_instances++;
             }

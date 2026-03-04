@@ -427,6 +427,36 @@ namespace smt {
                 mk_conflict_proof(conflict, not_l);
             if (m_ctx.tracking_assumptions())
                 mk_unsat_core(conflict, not_l);
+
+            //! CC: instrumentation
+            if (m.has_trace_stream()) {
+                switch (js.get_kind()) {
+                case b_justification::CLAUSE: {
+                    clause * cls = js.get_clause();
+                    m.trace_stream() << " --- conflict (clause) --- \n";
+                    m_ctx.display_clause_smt2(m.trace_stream(), *cls);
+                    m.trace_stream() << " --- end of conflict (clause) --- \n";
+                    break;
+                }
+                case b_justification::BIN_CLAUSE:
+                    m.trace_stream() << " --- conflict (bin) --- \n";
+                    m_ctx.display_literals_smt2(m.trace_stream(), consequent, ~js.get_literal()) << "\n";
+                    m.trace_stream() << " --- end of conflict (bin) --- \n";
+                    break;
+                case b_justification::AXIOM:
+                    break;
+                case b_justification::JUSTIFICATION:
+                    unsigned int dummy_num_marks;
+                    process_justification(consequent, js.get_justification(), dummy_num_marks);
+                    break;
+                default:
+                    UNREACHABLE();
+                }
+            }
+
+
+
+
             return false;
         }
 
