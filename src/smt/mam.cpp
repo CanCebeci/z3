@@ -1885,26 +1885,61 @@ namespace {
         // Flat-assoc applications may have arbitrary number of arguments.
         enode * get_first_f_app(func_decl * lbl, unsigned num_expected_args, enode * curr) {
             enode * first = curr;
+            enode * matching_cgr = nullptr;
+            enode * min_gen_match = nullptr;
             do {
-                if (curr->get_decl() == lbl && curr->is_cgr() && curr->get_num_args() == num_expected_args) {
-                    update_max_generation(curr, first);
-                    return curr;
+                if (curr->get_decl() == lbl  && curr->get_num_args() == num_expected_args) {
+                    if (curr->is_cgr()) {
+                        matching_cgr = curr;
+                    }
+                    // Instability fix: if the reason curr doesn't match is that it is not the congruence root 
+                    // (which is practically happenstance), the generation number should be calculated as if curr
+                    // is a match.
+                    // (I am not sure why the is_cgr() check is necessary at all. I am assuming this is an invariant that needs to be maintained)
+                    // TODO: make sure this all plays well with used_enodes for tracing purposes.
+
+                    if (min_gen_match == nullptr || min_gen_match->get_generation() > curr->get_generation()) {
+                        min_gen_match = curr;
+                    }
                 }
                 curr = curr->get_next();
             }
             while (curr != first);
+
+            if (matching_cgr != nullptr) {
+                update_max_generation(min_gen_match, first);
+                return matching_cgr;
+            }
+
             return nullptr;
         }
 
         enode * get_next_f_app(func_decl * lbl, unsigned num_expected_args, enode * first, enode * curr) {
             curr = curr->get_next();
+            enode * matching_cgr = nullptr;
+            enode * min_gen_match = nullptr;
             while (curr != first) {
-                if (curr->get_decl() == lbl && curr->is_cgr() && curr->get_num_args() == num_expected_args) {
-                    update_max_generation(curr, first);
-                    return curr;
+                if (curr->get_decl() == lbl  && curr->get_num_args() == num_expected_args) {
+                    if (curr->is_cgr()) {
+                        matching_cgr = curr;
+                    }
+                    // Instability fix: if the reason curr doesn't match is that it is not the congruence root 
+                    // (which is practically happenstance), the generation number should be calculated as if curr
+                    // is a match.
+                    // (I am not sure why the is_cgr() check is necessary at all. I am assuming this is an invariant that needs to be maintained)
+                    // TODO: make sure this all plays well with used_enodes for tracing purposes.
+
+                    if (min_gen_match == nullptr || min_gen_match->get_generation() > curr->get_generation()) {
+                        min_gen_match = curr;
+                    }
                 }
                 curr = curr->get_next();
             }
+            if (matching_cgr != nullptr) {
+                update_max_generation(min_gen_match, first);
+                return matching_cgr;
+            }
+
             return nullptr;
         }
 
