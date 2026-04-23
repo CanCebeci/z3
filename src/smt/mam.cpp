@@ -1889,7 +1889,7 @@ namespace {
             enode * min_gen_match = nullptr;
             do {
                 if (curr->get_decl() == lbl  && curr->get_num_args() == num_expected_args) {
-                    if (curr->is_cgr()) {
+                    if (matching_cgr == nullptr && curr->is_cgr()) {
                         matching_cgr = curr;
                     }
                     // Instability fix: if the reason curr doesn't match is that it is not the congruence root 
@@ -1920,7 +1920,7 @@ namespace {
             enode * min_gen_match = nullptr;
             while (curr != first) {
                 if (curr->get_decl() == lbl  && curr->get_num_args() == num_expected_args) {
-                    if (curr->is_cgr()) {
+                    if (matching_cgr == nullptr && curr->is_cgr()) {
                         matching_cgr = curr;
                     }
                     // Instability fix: if the reason curr doesn't match is that it is not the congruence root 
