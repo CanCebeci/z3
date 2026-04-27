@@ -982,6 +982,11 @@ namespace smt {
         unsigned n_id         = n->get_id();
         bool_var v            = get_bool_var_of_id(n_id);
         m_bool_var2expr[v]    = nullptr;
+
+        if (m.has_trace_stream()) {
+            m.trace_stream() << "[del-var] " << v << " #" << n->get_id() << "\n";
+        }
+
         TRACE(undo_mk_bool_var, tout << "undo_bool: " << v << "\n" << mk_pp(n, m) << "\n" << "m_bdata.size: " << m_bdata.size()
               << " m_assignment.size: " << m_assignment.size() << "\n";);
         TRACE(mk_var_bug, tout << "undo_mk_bool: " << v << "\n";);
@@ -1395,6 +1400,11 @@ namespace smt {
     */
     clause * context::mk_clause(unsigned num_lits, literal * lits, justification * j, clause_kind k, clause_del_eh * del_eh) {
         TRACE(mk_clause, display_literals_verbose(tout << "creating clause: " << literal_vector(num_lits, lits) << "\n", num_lits, lits) << "\n";);
+        if (m.has_trace_stream()) {
+            m.trace_stream() << "[--- mk-clause ---] ";
+            display_literals_verbose(m.trace_stream() << literal_vector(num_lits, lits) << "\n", num_lits, lits);
+            m.trace_stream() << "\n";
+        }
         m_clause_proof.add(num_lits, lits, k, j);
         literal_buffer simp_lits;
         switch (k) {

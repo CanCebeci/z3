@@ -2039,6 +2039,14 @@ namespace smt {
         if (log) 
             m_clause_proof.del(*cls);
         CTRACE(context, !m_flushing, display_clause_smt2(tout << "deleting ", *cls) << "\n";);
+                
+        if (m.has_trace_stream()) {
+            literal_vector lits;
+            for (literal lit : *cls)
+                lits.push_back(lit);
+            m.trace_stream() << "[del-clause] " << lits << "\n";
+        }
+
         if (!cls->deleted())
             remove_cls_occs(cls);
         cls->deallocate(m);
@@ -2057,6 +2065,9 @@ namespace smt {
         clause_vector::iterator begin = v.begin() + old_size;
         clause_vector::iterator it    = v.end();
         if (num_collect > 1000) {
+            if (m.has_trace_stream()) {
+                m.trace_stream() << "[del-clause] bulk\n";
+            }
             uint_set watches;
             while (it != begin) {
                 --it;
@@ -4065,6 +4076,29 @@ namespace smt {
                 switch (fcs) {
                 case FC_DONE:
                     log_stats();
+
+                    std::cout << "Dumping assignments\n";
+                    for (literal lit : m_assigned_literals) {
+                        std::cout << "; " << lit << " (" << (lit.sign()?"not":"") << "#" <<  bool_var2expr(lit.var())->get_id() << ")\n";
+                        // std::cout << "(<= 0 " << lit.var() << ")" << "\n";
+
+                        bool negate= lit.sign();
+                        std::cout << "(assert ";
+                        if (negate)
+                            std::cout << "(not ";
+
+                        
+                        
+                        std::cout << mk_pp(bool_var2expr(lit.var()), m);
+                        
+                        if (negate)
+                            std::cout << ")";
+                        std::cout << ")\n";
+                    }
+
+                    std::cout << "Dumping egraph\n";
+                    display_eqc(std::cout);
+
                     return l_true;
                 case FC_CONTINUE:
                     break;
@@ -4765,7 +4799,7 @@ namespace smt {
             m_proto_model = m_model_generator->mk_model();
             m_qmanager->adjust_model(m_proto_model.get());
             TRACE(mbqi_bug, tout << "before complete_partial_funcs:\n"; model_pp(tout, *m_proto_model););
-            m_proto_model->complete_partial_funcs(false);
+            // m_proto_model->complete_partial_funcs(false);
             TRACE(mbqi_bug, tout << "before cleanup:\n"; model_pp(tout, *m_proto_model););
             m_proto_model->cleanup();
             TRACE(mbqi_bug, tout << "after cleanup:\n"; model_pp(tout, *m_proto_model););
