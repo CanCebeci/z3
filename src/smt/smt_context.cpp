@@ -4101,6 +4101,9 @@ namespace smt {
                 switch (fcs) {
                 case FC_DONE:
                     log_stats();
+                    if (m.has_trace_stream()) {
+                        m.trace_stream() << "[found-model]\n";
+                    }
                     if (m_fparams.m_dump_assignments) {
                         dump_assignments();
                     }
