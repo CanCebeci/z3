@@ -4219,9 +4219,17 @@ namespace smt {
                 return FC_CONTINUE;
             }
             if (m_final_check_idx == old_idx) {
-                if (level >= max_level || result == FC_DONE || can_propagate())
+                if (level >= max_level || result == FC_DONE || result == FC_CONTINUE || can_propagate())
                     break;
                 ++level;
+                // Re-evaluate at the higher level: clear the give-up state
+                // accumulated at lower levels so a level that succeeds is
+                // not masked by a previous FC_GIVEUP. See e.g. theory_lra
+                // whose level 2 invokes the full nlsat (m_nra.check) that
+                // is skipped at level 1.
+                result = FC_DONE;
+                f      = OK;
+                m_incomplete_theories.reset();
             }
         }
 
