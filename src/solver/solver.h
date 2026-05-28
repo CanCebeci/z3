@@ -25,6 +25,7 @@ Notes:
 
 class solver;
 class model_converter;
+class sexpr;
 
 
 
@@ -267,7 +268,7 @@ public:
     /**
        \brief print congruence closure root at the time of failure.
     */
-    virtual void get_cgr_on_failure(expr* e);
+    virtual void get_cgr_on_failure(sexpr* e);
 
     struct solution {
         expr* var;
