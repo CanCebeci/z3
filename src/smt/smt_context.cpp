@@ -4153,6 +4153,7 @@ namespace smt {
                         display_eqc(std::cout);
                     }
 
+                    print_on_failure_logs();
                     return l_true;
                 case FC_CONTINUE:
                     break;
