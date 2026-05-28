@@ -53,6 +53,7 @@ Revision History:
 #include "solver/progress_callback.h"
 #include "solver/assertions/asserted_formulas.h"
 #include "util/sexpr.h"
+#include "util/sexpr.h"
 #include <tuple>
 
 // there is a significant space overhead with allocating 1000+ contexts in
