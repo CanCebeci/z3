@@ -45,8 +45,34 @@ Revision History:
 #include "smt/smt_parallel.h"
 #include "smt/smt_arith_value.h"
 #include <iostream>
+#include <sstream>
 
 namespace smt {
+
+    static sexpr* copy_sexpr(sexpr_manager& sm, sexpr* s) {
+        if (!s)
+            return nullptr;
+        switch (s->get_kind()) {
+        case sexpr::kind_t::COMPOSITE: {
+            ptr_buffer<sexpr> children;
+            for (unsigned i = 0; i < s->get_num_children(); ++i)
+                children.push_back(copy_sexpr(sm, s->get_child(i)));
+            return sm.mk_composite(children.size(), children.data(), s->get_line(), s->get_pos());
+        }
+        case sexpr::kind_t::NUMERAL:
+            return sm.mk_numeral(s->get_numeral(), s->get_line(), s->get_pos());
+        case sexpr::kind_t::BV_NUMERAL:
+            return sm.mk_bv_numeral(s->get_numeral(), s->get_bv_size(), s->get_line(), s->get_pos());
+        case sexpr::kind_t::STRING:
+            return sm.mk_string(s->get_string(), s->get_line(), s->get_pos());
+        case sexpr::kind_t::KEYWORD:
+            return sm.mk_keyword(s->get_symbol(), s->get_line(), s->get_pos());
+        case sexpr::kind_t::SYMBOL:
+            return sm.mk_symbol(s->get_symbol(), s->get_line(), s->get_pos());
+        }
+        UNREACHABLE();
+        return nullptr;
+    }
 
     context::context(ast_manager & m, smt_params & p, params_ref const & _p):
         m(m),
@@ -79,6 +105,7 @@ namespace smt {
         m_dyn_ack_manager(*this, p),
         m_unknown("unknown"),
         m_unsat_core(m),
+        m_cgr_on_failure_todo(m_cgr_on_failure_sm),
         m_mk_bool_var_trail(*this),
         m_mk_enode_trail(*this),
         m_mk_lambda_trail(*this),
@@ -4101,6 +4128,7 @@ namespace smt {
                 switch (fcs) {
                 case FC_DONE:
                     log_stats();
+                    print_on_failure_logs();
                     if (m.has_trace_stream()) {
                         m.trace_stream() << "[found-model]\n";
                     }
@@ -4922,6 +4950,146 @@ namespace smt {
             m_model->add_rec_funs();
     }
 
+    enode* context::find_enode_rec(expr* e) {
+        if (enode* n = find_enode(e))
+            return n;
+        if (!is_app(e))
+            return nullptr;
+        app* a = to_app(e);
+        enode_vector arg_enodes;
+        for (expr* arg : *a)
+            if (enode* n = find_enode_rec(arg))
+                arg_enodes.push_back(n);
+            else
+                return nullptr;
+        // The hash function for cg_table looks up the root enode for each argument, so we don't need to do it here.
+        return get_enode_eq_to(a->get_decl(), a->get_num_args(), arg_enodes.data());
+    }
+
+    void context::print_cgr(expr* e) {
+        smt::enode* n = find_enode_rec(e);
+        if (!n)
+            std::cout << "No enodes congruent to " << mk_pp(e, m) << "\n";
+        else
+            std::cout << "The congruence root for " << mk_pp(e, m) << " is #" << n->get_root()->get_owner_id() << ": " << mk_pp(n->get_root()->get_expr(), m) << "\n";
+    }
+
+    expr* context::sexpr_to_expr(sexpr* s) {
+        if (!s)
+            return nullptr;
+
+        if (s->is_numeral()) {
+            arith_util a(m);
+            return a.mk_numeral(s->get_numeral(), true);
+        }
+
+        if (s->is_bv_numeral()) {
+            bv_util bv(m);
+            return bv.mk_numeral(s->get_numeral(), s->get_bv_size());
+        }
+
+        if (s->is_symbol()) {
+            symbol name = s->get_symbol();
+            if (name == symbol("true"))
+                return m.mk_true();
+            if (name == symbol("false"))
+                return m.mk_false();
+            for (enode* n : m_enodes) {
+                app* a = n->get_expr();
+                if (a->get_num_args() == 0 && a->get_decl()->get_name() == name)
+                    return a;
+            }
+            return nullptr;
+        }
+
+        if (!s->is_composite() || s->get_num_children() == 0)
+            return nullptr;
+
+        sexpr* head = s->get_child(0);
+        if (!head->is_symbol())
+            return nullptr;
+
+        symbol name = head->get_symbol();
+        unsigned arity = s->get_num_children() - 1;
+        expr_ref_vector args(m);
+        for (unsigned i = 1; i < s->get_num_children(); ++i) {
+            expr* arg = sexpr_to_expr(s->get_child(i));
+            if (!arg)
+                return nullptr;
+            args.push_back(arg);
+        }
+
+        func_decl* decl = nullptr;
+        for (enode* n : m_enodes) {
+            app* a = n->get_expr();
+            func_decl* f = a->get_decl();
+            if (f->get_name() != name || f->get_arity() != arity)
+                continue;
+            bool sorts_match = true;
+            for (unsigned i = 0; i < arity; ++i) {
+                if (f->get_domain(i) != args[i]->get_sort()) {
+                    sorts_match = false;
+                    break;
+                }
+            }
+            if (sorts_match) {
+                decl = f;
+                break;
+            }
+        }
+
+        if (decl)
+            return m.mk_app(decl, args.size(), args.data());
+
+        arith_util a(m);
+        if (name == symbol(">") && arity == 2)
+            return a.mk_gt(args.get(0), args.get(1));
+        if (name == symbol(">=") && arity == 2)
+            return a.mk_ge(args.get(0), args.get(1));
+        if (name == symbol("<") && arity == 2)
+            return a.mk_lt(args.get(0), args.get(1));
+        if (name == symbol("<=") && arity == 2)
+            return a.mk_le(args.get(0), args.get(1));
+        if (name == symbol("+") && arity > 0)
+            return a.mk_add(args.size(), args.data());
+        if (name == symbol("*") && arity > 0)
+            return a.mk_mul(args.size(), args.data());
+        if (name == symbol("-") && arity == 1)
+            return a.mk_uminus(args.get(0));
+        if (name == symbol("-") && arity == 2)
+            return a.mk_sub(args.get(0), args.get(1));
+        if (name == symbol("/") && arity == 2)
+            return a.mk_div(args.get(0), args.get(1));
+
+        return nullptr;
+    }
+
+    void context::print_on_failure_logs() {
+        for (sexpr* s : m_cgr_on_failure_todo) {
+            if (expr* e = sexpr_to_expr(s)) {
+                print_cgr(e);
+            }
+            else {
+                std::ostringstream out;
+                s->display(out);
+                std::cout << "Could not parse sexpr: " << out.str() << "\n";
+            }
+        }
+        m_cgr_on_failure_todo.reset();
+
+        if (m_dump_egraph_on_failure) {
+            std::cout << "; Dumping egraph\n";
+            display_eqc(std::cout);
+        }
+    }
+
+    void context::get_cgr_on_failure(sexpr * e) {
+        m_cgr_on_failure_todo.push_back(copy_sexpr(m_cgr_on_failure_sm, e));
+    }
+
+    void context::dump_egraph_on_failure(bool enable) {
+        m_dump_egraph_on_failure = enable;
+    }
 };
 
 

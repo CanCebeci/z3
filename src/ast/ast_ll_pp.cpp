@@ -21,7 +21,8 @@ Revision History:
 #include "ast/for_each_ast.h"
 #include "ast/arith_decl_plugin.h"
 #include "ast/datatype_decl_plugin.h"
-#include "ast/ast_smt2_pp.h" // ensure_quote()
+#include "ast/ast_smt2_pp.h"
+
 
 // #define AST_LL_PP_SHOW_FAMILY_NAME
 
