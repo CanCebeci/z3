@@ -127,6 +127,7 @@ namespace smt {
         case eq_justification::CONGRUENCE: {
             CTRACE(dyn_ack_target, !lhs->is_eq(), tout << "dyn_ack_target2: " << lhs->get_owner_id() << " " << rhs->get_owner_id() << "\n";);
             m_dyn_ack_manager.used_cg_eh(lhs->get_app(), rhs->get_app());
+            m_dyn_ack_manager.used_cg_eh(lhs->get_app(), rhs->get_app());
             unsigned num_args = lhs->get_num_args();
             SASSERT(num_args == rhs->get_num_args());
             if (js.used_commutativity()) {

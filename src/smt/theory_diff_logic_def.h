@@ -385,6 +385,7 @@ final_check_status theory_diff_logic<Ext>::final_check_eh(unsigned level) {
 
     for (enode* n : ctx.enodes()) {
         family_id fid = n->get_family_id();
+        family_id fid = n->get_family_id();
         if (fid != get_family_id() && 
             fid != m.get_basic_family_id() &&
             !is_uninterp_const(n->get_expr())) {

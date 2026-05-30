@@ -273,6 +273,7 @@ namespace smt {
         ast_translation tr(src_ctx.m, m, false);
         for (unsigned i = 0; i < src_ctx.m_user_propagator->get_num_vars(); ++i) {
             auto e = src_ctx.m_user_propagator->get_expr(i);
+            auto e = src_ctx.m_user_propagator->get_expr(i);
             m_user_propagator->add_expr(tr(e), true);
         }
     }
@@ -1193,7 +1194,7 @@ namespace smt {
             m.inc_ref(eq);
             _this->m_is_diseq_tmp = enode::mk_dummy(m, m_app2enode, eq);
         }
-        else if (m_is_diseq_tmp->get_app()->get_arg(0)->get_sort() != n1->get_sort()) {
+        else if (m_is_diseq_tmp->get_expr()->get_arg(0)->get_sort() != n1->get_sort()) {
             m.dec_ref(m_is_diseq_tmp->get_expr());
             app * eq = m.mk_eq(n1->get_expr(), n2->get_expr());
             m.inc_ref(eq);
@@ -4787,7 +4788,8 @@ namespace smt {
             theory_id th_id     = l->get_id();
 
             for (enode * parent : enode::parents(n)) {
-                family_id fid = parent->get_family_id();
+                app* p = parent->get_expr();
+                family_id fid = p->get_family_id();
                 if (fid != th_id && fid != m.get_basic_family_id()) {
                     if (is_beta_redex(parent, n))
                         continue;

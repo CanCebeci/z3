@@ -108,6 +108,7 @@ namespace smt {
 
     void theory_array_base::assert_store_axiom1_core(enode * e) {
         app * n           = e->get_app();
+        app * n           = e->get_app();
         SASSERT(is_store(n));
         ptr_buffer<expr> sel_args;
         unsigned num_args = n->get_num_args();

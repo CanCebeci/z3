@@ -1087,6 +1087,7 @@ namespace smt {
         ast_manager& m = get_manager();
         inf_numeral const& val = get_value(v);
         expr* obj = get_expr(v);
+        expr* obj = get_expr(v);
         expr_ref e(m);
         rational r = val.get_rational();
         if (m_util.is_int(obj->get_sort())) {

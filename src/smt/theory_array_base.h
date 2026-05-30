@@ -44,6 +44,14 @@ namespace smt {
         bool is_array_ext(expr const * n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_ARRAY_EXT); }
         bool is_as_array(expr const * n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_AS_ARRAY); }
         bool is_choice(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_CHOICE); }
+        bool is_store(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_STORE); }
+        bool is_map(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_ARRAY_MAP); }
+        bool is_select(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_SELECT); }
+        bool is_default(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_ARRAY_DEFAULT); }
+        bool is_const(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_CONST_ARRAY); }
+        bool is_array_ext(expr const * n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_ARRAY_EXT); }
+        bool is_as_array(expr const * n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_AS_ARRAY); }
+        bool is_choice(expr const* n) const { return is_app(n) && to_app(n)->is_app_of(get_id(), OP_CHOICE); }
         bool is_array_sort(sort const* s) const { return s->is_sort_of(get_id(), ARRAY_SORT); }
         bool is_array_sort(expr const* n) const { return is_array_sort(n->get_sort()); }
         

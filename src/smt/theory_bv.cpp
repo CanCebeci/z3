@@ -39,6 +39,7 @@ namespace smt {
     }
 
     app * theory_bv::mk_bit2bool(expr * bv, unsigned idx) {
+    app * theory_bv::mk_bit2bool(expr * bv, unsigned idx) {
         parameter p(idx);
         expr * args[1] = {bv};
         return get_manager().mk_app(get_id(), OP_BIT2BOOL, 1, &p, 1, args);
@@ -46,6 +47,7 @@ namespace smt {
     
     void theory_bv::mk_bits(theory_var v) {
         enode * n             = get_enode(v);
+        expr * owner           = n->get_expr();
         expr * owner           = n->get_expr();
         unsigned bv_size      = get_bv_size(n);
         bool is_relevant      = ctx.is_relevant(n);
@@ -1155,7 +1157,7 @@ namespace smt {
         if (!is_attached_to_var(n) && !approximate_term(n->get_expr())) {
             mk_bits(mk_var(n));
             if (ctx.is_relevant(n)) {
-                relevant_eh(n->get_expr());
+                relevant_eh(n->get_app());
             }
         }
     }

@@ -408,6 +408,7 @@ namespace smt {
     }
     
     void theory_array_full::relevant_eh(expr* n) {
+    void theory_array_full::relevant_eh(expr* n) {
         TRACE(array, tout << mk_pp(n, m) << "\n";);
         theory_array::relevant_eh(n);
         if (!is_default(n) && !is_select(n) && !is_map(n) && 
@@ -418,11 +419,13 @@ namespace smt {
         enode* node = ctx.get_enode(n);
         if (is_select(n)) {
             enode * arg = ctx.get_enode(to_app(n)->get_arg(0));
+            enode * arg = ctx.get_enode(to_app(n)->get_arg(0));
             theory_var v = arg->get_th_var(get_id());
             SASSERT(v != null_theory_var);
             add_parent_select(find(v), node);            
         }
         else if (is_default(n)) {
+            enode * arg = ctx.get_enode(to_app(n)->get_arg(0));
             enode * arg = ctx.get_enode(to_app(n)->get_arg(0));
             theory_var v = arg->get_th_var(get_id());
             SASSERT(v != null_theory_var);
@@ -449,7 +452,7 @@ namespace smt {
         }
         else if (is_choice(n)) {
             m_choice_terms.push_back(node);
-            ctx.push_trail(push_back_vector(m_choice_terms));            
+            ctx.push_trail(push_back_vector(m_choice_terms));
         }
     }
 
@@ -697,7 +700,7 @@ namespace smt {
     // select(as-array f, i_1, ..., i_n) = (f i_1 ... i_n)
     //
     bool theory_array_full::instantiate_select_as_array_axiom(enode* select, enode* arr) {
-        SASSERT(is_as_array(arr->get_expr()));
+        SASSERT(is_as_array(arr->get_app()));
         SASSERT(is_select(select));
         SASSERT(arr->get_num_args() == 0);
         unsigned num_args = select->get_num_args();
@@ -707,12 +710,12 @@ namespace smt {
 
         m_stats.m_num_select_as_array_axiom++;   
         ptr_buffer<expr> sel_args;
-        sel_args.push_back(arr->get_expr());
+        sel_args.push_back(arr->get_app());
         for (unsigned short i = 1; i < num_args; ++i) {
             sel_args.push_back(select->get_app()->get_arg(i));
         }
         expr * sel = mk_select(sel_args.size(), sel_args.data());
-        func_decl * f = array_util(m).get_as_array_func_decl(arr->get_expr());
+        func_decl * f = array_util(m).get_as_array_func_decl(arr->get_app());
         expr_ref val(m.mk_app(f, sel_args.size()-1, sel_args.data()+1), m);
         TRACE(array, tout << "new select-as-array axiom...\n";
               tout << "as-array: " << mk_bounded_pp(arr->get_expr(), m) << "\n";

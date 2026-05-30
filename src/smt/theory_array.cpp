@@ -43,6 +43,7 @@ namespace smt {
         TRACE(array, 
               tout << "merging v" << v1 << " v" << v2 << "\n"; display_var(tout, v1);
               tout << mk_pp(get_expr(v1), m) << " <- " << mk_pp(get_expr(v2), m) << "\n";);
+              tout << mk_pp(get_expr(v1), m) << " <- " << mk_pp(get_expr(v2), m) << "\n";);
         SASSERT(v1 == find(v1));
         var_data * d1 = m_var_data[v1];
         var_data * d2 = m_var_data[v2];
@@ -305,6 +306,8 @@ namespace smt {
         v2 = find(v2);        
         var_data * d1 = m_var_data[v1];
         TRACE(ext, tout << "extensionality: " << d1->m_is_array << "\n" 
+              << mk_bounded_pp(get_expr(v1), m, 5) << "\n" 
+              << mk_bounded_pp(get_expr(v2), m, 5) << "\n";);
               << mk_bounded_pp(get_expr(v1), m, 5) << "\n" 
               << mk_bounded_pp(get_expr(v2), m, 5) << "\n";);
         

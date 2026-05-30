@@ -174,6 +174,7 @@ namespace smt {
 
         
         void relevant_eh(expr * n) override {
+        void relevant_eh(expr * n) override {
             if (u().is_finite_sort(n)) {
                 sort* s = n->get_sort();
                 func_decl* r, *v;
