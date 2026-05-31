@@ -1194,7 +1194,11 @@ namespace smt {
             m.inc_ref(eq);
             _this->m_is_diseq_tmp = enode::mk_dummy(m, m_app2enode, eq);
         }
+<<<<<<< HEAD
         else if (m_is_diseq_tmp->get_expr()->get_arg(0)->get_sort() != n1->get_sort()) {
+=======
+        else if (m_is_diseq_tmp->get_app()->get_arg(0)->get_sort() != n1->get_sort()) {
+>>>>>>> 987874657 (fix regression: m_tmp_diseq has 0 arguments, you have to access the expression)
             m.dec_ref(m_is_diseq_tmp->get_expr());
             app * eq = m.mk_eq(n1->get_expr(), n2->get_expr());
             m.inc_ref(eq);
@@ -4788,7 +4792,7 @@ namespace smt {
             theory_id th_id     = l->get_id();
 
             for (enode * parent : enode::parents(n)) {
-                app* p = parent->get_expr();
+                app* p = parent->get_app();
                 family_id fid = p->get_family_id();
                 if (fid != th_id && fid != m.get_basic_family_id()) {
                     if (is_beta_redex(parent, n))
