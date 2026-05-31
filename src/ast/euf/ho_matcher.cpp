@@ -661,13 +661,17 @@ namespace euf {
         if (!is_ho)
             return { q, p };
         vector<std::pair<expr*, unsigned>> todo;
+        vector<std::pair<expr*, unsigned>> todo;
         ptr_buffer<var> bound;
         expr_ref_vector cache(m);
         unsigned nb = q->get_num_decls();
         bool contains_pat2abs = m_pat2abs.contains(p);
         SASSERT(m.is_pattern(p));
         todo.push_back({p, 0});
+        SASSERT(m.is_pattern(p));
+        todo.push_back({p, 0});
         while (!todo.empty()) {
+            auto [t, lvl] = todo.back();
             auto [t, lvl] = todo.back();
             if (is_var(t)) {
                 cache.setx(t->get_id(), t);
