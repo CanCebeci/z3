@@ -142,7 +142,7 @@ namespace smt {
         theory_var next(theory_var v) const { return m_find.next(v); }
         bool is_root(theory_var v) const { return m_find.is_root(v); }
         unsigned get_bv_size(app const * n) const { return m_util.get_bv_size(n); }
-        unsigned get_bv_size(enode const * n) const { return m_util.get_bv_size(n->get_app()); }
+        unsigned get_bv_size(enode const * n) const { return m_util.get_bv_size(n->get_expr()); }
         unsigned get_bv_size(theory_var v) const { return get_bv_size(get_enode(v)); }
         bool is_bv(expr const* n) const { return m_util.is_bv_sort(n->get_sort()); }
         bool is_bv(enode const* n) const { return is_bv(n->get_expr()); }

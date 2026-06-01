@@ -1157,7 +1157,7 @@ namespace smt {
         if (!is_attached_to_var(n) && !approximate_term(n->get_expr())) {
             mk_bits(mk_var(n));
             if (ctx.is_relevant(n)) {
-                relevant_eh(n->get_app());
+                relevant_eh(n->get_expr());
             }
         }
     }
