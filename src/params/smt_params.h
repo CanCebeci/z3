@@ -225,6 +225,7 @@ struct smt_params : public preprocessor_params,
     // -----------------------------------
     bool             m_core_validate = false;
     bool             m_planner_trace = false;
+    bool             m_reduce_assertions = true;
 
     // -----------------------------------
     //
