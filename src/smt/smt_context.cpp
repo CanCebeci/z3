@@ -106,7 +106,6 @@ namespace smt {
         m_unknown("unknown"),
         m_unsat_core(m),
         m_cgr_on_failure_todo(m_cgr_on_failure_sm),
-        m_cgr_listeners(m),
         m_mk_bool_var_trail(*this),
         m_mk_enode_trail(*this),
         m_mk_lambda_trail(*this),
@@ -3301,7 +3300,7 @@ namespace smt {
         timeit tt(get_verbosity_level() >= 100, "smt.preprocessing");
         unsigned qhead = 0;
         do {
-            reduce_assertions();
+                reduce_assertions();
             if (get_cancel_flag()) 
                 return;
             if (m_asserted_formulas.inconsistent()) {
@@ -4904,8 +4903,10 @@ namespace smt {
     }
 
     enode* context::find_enode_rec(expr* e) {
-        if (enode* n = find_enode(e))
+        if (enode* n = find_enode(e)) {
+            std:: cout << "Found enode for " << mk_pp(e, m) << ": #" << n->get_cg()->get_owner_id() << std::endl;
             return n;
+        }
         if (!is_app(e))
             return nullptr;
         app* a = to_app(e);
@@ -4916,7 +4917,9 @@ namespace smt {
             else
                 return nullptr;
         // The hash function for cg_table looks up the root enode for each argument, so we don't need to do it here.
-        return get_enode_eq_to(a->get_decl(), a->get_num_args(), arg_enodes.data());
+        enode* res = get_enode_eq_to(a->get_decl(), a->get_num_args(), arg_enodes.data());
+        std::cout << "Enode_eq_to " << mk_pp(e, m) << ": #" << res->get_cg()->get_owner_id() << std::endl;
+        return res;
     }
 
     void context::print_cgr(expr* e) {
@@ -4924,7 +4927,7 @@ namespace smt {
         if (!n)
             std::cout << "No enodes congruent to " << mk_pp(e, m) << "\n";
         else
-            std::cout << "The congruence root for " << mk_pp(e, m) << " is #" << n->get_root()->get_owner_id() << ": " << mk_pp(n->get_root()->get_expr(), m) << "\n";
+            std::cout << "The congruence representative for " << mk_pp(e, m) << " is #" << n->get_cg()->get_owner_id() << ": " << mk_pp(n->get_cg()->get_expr(), m) << "\n";
     }
 
     expr* context::sexpr_to_expr(sexpr* s) {
