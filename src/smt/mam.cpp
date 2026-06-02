@@ -1882,6 +1882,10 @@ namespace {
         }
 
         void update_max_generation(enode * n, enode * prev, enode * min_gen_match=nullptr) {
+            if (m.has_trace_stream()) {
+                m.trace_stream() << "Updating max generation (" << m_max_generation << " -> " << n->get_generation() << ") : " << n->get_owner_id() << std::endl;
+            }
+
             unsigned new_gen = min_gen_match ? min_gen_match->get_generation() : n->get_generation();
 
             if (m.has_trace_stream()) {
