@@ -106,6 +106,7 @@ namespace smt {
         m_unknown("unknown"),
         m_unsat_core(m),
         m_cgr_on_failure_todo(m_cgr_on_failure_sm),
+        m_cgr_listeners(m),
         m_mk_bool_var_trail(*this),
         m_mk_enode_trail(*this),
         m_mk_lambda_trail(*this),
@@ -4952,11 +4953,15 @@ namespace smt {
     }
 
     enode* context::find_enode_rec(expr* e) {
-        if (enode* n = find_enode(e))
+        if (enode* n = find_enode(e)) {
+            // std:: cout << "Found enode for " << mk_pp(e, m) << ": #" << n->get_owner_id() << std::endl;
             return n;
+        }
         if (!is_app(e))
             return nullptr;
         app* a = to_app(e);
+        if (a->get_num_args() == 0)
+            return nullptr;
         enode_vector arg_enodes;
         for (expr* arg : *a)
             if (enode* n = find_enode_rec(arg))
@@ -4964,15 +4969,25 @@ namespace smt {
             else
                 return nullptr;
         // The hash function for cg_table looks up the root enode for each argument, so we don't need to do it here.
-        return get_enode_eq_to(a->get_decl(), a->get_num_args(), arg_enodes.data());
+        enode* res = get_enode_eq_to(a->get_decl(), a->get_num_args(), arg_enodes.data());
+        if (res) {
+            //std::cout << "Enode_eq_to " << mk_pp(e, m) << ": #" << res->get_owner_id() << std::endl;
+        }
+        return res;
     }
 
     void context::print_cgr(expr* e) {
+        params_ref prms;
+        prms.set_bool("pp.single_line", true);
+        prms.set_uint("pp.min_alias_size", 1000000u);
+        prms.set_uint("pp.max_depth", 100000u);
         smt::enode* n = find_enode_rec(e);
         if (!n)
-            std::cout << "No enodes congruent to " << mk_pp(e, m) << "\n";
-        else
-            std::cout << "The congruence root for " << mk_pp(e, m) << " is #" << n->get_root()->get_owner_id() << ": " << mk_pp(n->get_root()->get_expr(), m) << "\n";
+            std::cout << "No enodes congruent to " << mk_pp(e, m, prms) << "\n";
+        else {
+            enode* cg = n->get_cg_or_const();
+            std::cout << "The congruence representative for " << mk_pp(e, m, prms) << " is #" << cg->get_owner_id() << ": " << mk_pp(cg->get_expr(), m, prms) << "\n";
+        }
     }
 
     expr* context::sexpr_to_expr(sexpr* s) {
@@ -5086,6 +5101,10 @@ namespace smt {
 
     void context::get_cgr_on_failure(sexpr * e) {
         m_cgr_on_failure_todo.push_back(copy_sexpr(m_cgr_on_failure_sm, e));
+    }
+
+    void context::add_cgr_listener(expr* e) {
+        m_cgr_listeners.push_back(e);
     }
 
     void context::dump_egraph_on_failure(bool enable) {
