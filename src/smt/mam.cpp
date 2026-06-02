@@ -1881,12 +1881,14 @@ namespace {
             m_pool.recycle(v);
         }
 
-        void update_max_generation(enode * n, enode * prev) {
+        void update_max_generation(enode * n, enode * prev, enode * min_gen_match=nullptr) {
+            unsigned new_gen = min_gen_match ? min_gen_match->get_generation() : n->get_generation();
+
             if (m.has_trace_stream()) {
-                m.trace_stream() << "Updating max generation (" << m_max_generation << " -> " << n->get_generation() << ") : " << n->get_owner_id() << std::endl;
+                m.trace_stream() << "Updating max generation (" << m_max_generation << " -> " << new_gen << ") : " << n->get_owner_id() << std::endl;
             }
 
-            m_max_generation = std::max(m_max_generation, n->get_generation());
+            m_max_generation = std::max(m_max_generation, new_gen);
 
          
             if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality))
@@ -1915,7 +1917,7 @@ namespace {
             }
             while (curr != first);
             if (matching_cgr)
-                update_max_generation(min_gen_match, first);  
+                update_max_generation(matching_cgr, first, min_gen_match);  
             return matching_cgr;
         }
 
@@ -1923,8 +1925,11 @@ namespace {
             curr = curr->get_next();
             enode *matching_cgr = nullptr, *min_gen_match = nullptr;
             while (curr != first) {
-                if (curr->get_decl() == lbl && curr->get_num_args() == num_expected_args && curr->is_cgr())
+                if (curr->get_decl() == lbl && curr->get_num_args() == num_expected_args && curr->is_cgr()) {
+                    if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality))
+                        m_used_enodes.push_back(std::make_tuple(first, curr));
                     return curr;
+                }
                 curr = curr->get_next();
             }
             if (matching_cgr)
