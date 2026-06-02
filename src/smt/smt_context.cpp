@@ -4962,7 +4962,7 @@ namespace smt {
             if (name == symbol("false"))
                 return m.mk_false();
             for (enode* n : m_enodes) {
-                app* a = n->get_expr();
+                app* a = n->get_app();
                 if (a->get_num_args() == 0 && a->get_decl()->get_name() == name)
                     return a;
             }
@@ -4988,7 +4988,7 @@ namespace smt {
 
         func_decl* decl = nullptr;
         for (enode* n : m_enodes) {
-            app* a = n->get_expr();
+            app* a = n->get_app();
             func_decl* f = a->get_decl();
             if (f->get_name() != name || f->get_arity() != arity)
                 continue;
