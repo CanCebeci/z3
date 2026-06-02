@@ -302,6 +302,10 @@ namespace smt {
             return m_cg;
         }
 
+        enode * get_cg_or_const() {
+            return get_num_args() > 0 ? get_cg() : this;
+        }
+
         bool is_cgc_enabled() const {
             return m_cgc_enabled;
         }
