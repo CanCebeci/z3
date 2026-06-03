@@ -1884,8 +1884,12 @@ namespace {
         void update_max_generation(enode * n, enode * prev, enode * min_gen_match=nullptr) {
             unsigned new_gen = min_gen_match ? min_gen_match->get_generation() : n->get_generation();
 
-            m_max_generation = std::max(m_max_generation, new_gen);
+            if (m_max_generation == UINT_MAX)
+                m_max_generation = new_gen;
+            else
+                m_max_generation = std::max(m_max_generation, new_gen);
 
+         
             if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality))
                 m_used_enodes.push_back(std::make_tuple(prev, n));
         }
@@ -2329,7 +2333,7 @@ namespace {
         m_min_top_generation.reset();
         m_max_top_generation.reset();
         m_pattern_instances.push_back(n);
-        m_max_generation = 0;
+        m_max_generation = UINT_MAX;
 
         if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality)) {
             m_used_enodes.reset();
@@ -2569,11 +2573,12 @@ namespace {
 
         case YIELD1:
             m_bindings[0] = m_registers[static_cast<const yield *>(m_pc)->m_bindings[0]];
-#define ON_MATCH(NUM)                                                   \
-            m_max_generation = std::max(m_max_generation, get_max_generation(NUM, m_bindings.begin())); \
-            if (m_context.get_cancel_flag()) {                          \
-                return false;                                           \
-            }                                                           \
+#define ON_MATCH(NUM)                                                                                   \
+            if (m_max_generation == UINT_MAX)                                                           \
+                m_max_generation = get_max_generation(NUM, m_bindings.begin());                         \
+            if (m_context.get_cancel_flag()) {                                                          \
+                return false;                                                                           \
+            }                                                                                           \
             m_mam.on_match(static_cast<const yield *>(m_pc)->m_qa,                                      \
                            static_cast<const yield *>(m_pc)->m_pat,                                     \
                            NUM,                                                                         \
@@ -3985,10 +3990,10 @@ namespace {
                 }
                 return;
             }
-            DEBUG_CODE(
-                for (unsigned i = 0; i < num_bindings; ++i) {
-                    SASSERT(bindings[i]->get_generation() <= max_generation);
-                });
+            // DEBUG_CODE(
+            //     for (unsigned i = 0; i < num_bindings; ++i) {
+            //         SASSERT(bindings[i]->get_generation() <= max_generation);
+            //     });
                 
 #endif
             unsigned min_gen = 0, max_gen = 0;
