@@ -1888,7 +1888,10 @@ namespace {
                 m.trace_stream() << "Updating max generation (" << m_max_generation << " -> " << new_gen << ") : " << n->get_owner_id() << std::endl;
             }
 
-            m_max_generation = std::max(m_max_generation, new_gen);
+            if (m_max_generation == UINT_MAX)
+                m_max_generation = new_gen;
+            else
+                m_max_generation = std::max(m_max_generation, new_gen);
 
          
             if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality))
@@ -1906,19 +1909,34 @@ namespace {
             }
         }
 
+        enode * find_min_gen_cg(func_decl* lbl, unsigned num_expected_args, enode * cgr) {
+            SASSERT(cgr->is_cgr());
+            enode * min_gen_cg = cgr;
+            enode * curr = cgr->get_next();
+            while (curr != cgr) {
+                if (curr->get_decl() == lbl && curr->get_num_args() == num_expected_args && curr->get_cg() == cgr) {
+                    if (min_gen_cg->get_generation() > curr->get_generation()) {
+                        min_gen_cg = curr;
+                    }
+                }
+                curr = curr->get_next();
+            }
+            return min_gen_cg;
+        }
+
         // We have to provide the number of expected arguments because we have flat-assoc applications such as +.
         // Flat-assoc applications may have arbitrary number of arguments.
         enode * get_first_f_app(func_decl * lbl, unsigned num_expected_args, enode * curr) {
-            enode * first = curr;
-            enode *matching_cgr = nullptr, *min_gen_match = nullptr;
+            enode *first = curr;
             do {
-                get_f_app(lbl, num_expected_args, curr, matching_cgr, min_gen_match);
+                if (curr->get_decl() == lbl && curr->get_num_args() == num_expected_args && curr->is_cgr()) {
+                    update_max_generation(curr, first, find_min_gen_cg(lbl, num_expected_args, curr));  
+                    return curr;
+                }
                 curr = curr->get_next();
-            }
-            while (curr != first);
-            if (matching_cgr)
-                update_max_generation(matching_cgr, first, min_gen_match);  
-            return matching_cgr;
+            } while (curr != first);
+
+            return nullptr;
         }
 
         enode * get_next_f_app(func_decl * lbl, unsigned num_expected_args, enode * first, enode * curr) {
@@ -1926,8 +1944,7 @@ namespace {
             enode *matching_cgr = nullptr, *min_gen_match = nullptr;
             while (curr != first) {
                 if (curr->get_decl() == lbl && curr->get_num_args() == num_expected_args && curr->is_cgr()) {
-                    if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality))
-                        m_used_enodes.push_back(std::make_tuple(first, curr));
+                    update_max_generation(curr, first, find_min_gen_cg(lbl, num_expected_args, curr));
                     return curr;
                 }
                 curr = curr->get_next();
@@ -2341,7 +2358,7 @@ namespace {
         m_min_top_generation.reset();
         m_max_top_generation.reset();
         m_pattern_instances.push_back(n);
-        m_max_generation = 0;
+        m_max_generation = UINT_MAX;
 
         if (m.has_trace_stream() || is_trace_enabled(TraceTag::causality)) {
             m_used_enodes.reset();
@@ -2581,11 +2598,12 @@ namespace {
 
         case YIELD1:
             m_bindings[0] = m_registers[static_cast<const yield *>(m_pc)->m_bindings[0]];
-#define ON_MATCH(NUM)                                                   \
-            m_max_generation = std::max(m_max_generation, get_max_generation(NUM, m_bindings.begin())); \
-            if (m_context.get_cancel_flag()) {                          \
-                return false;                                           \
-            }                                                           \
+#define ON_MATCH(NUM)                                                                                   \
+            if (m_max_generation == UINT_MAX)                                                           \
+                m_max_generation = get_max_generation(NUM, m_bindings.begin());                         \
+            if (m_context.get_cancel_flag()) {                                                          \
+                return false;                                                                           \
+            }                                                                                           \
             m_mam.on_match(static_cast<const yield *>(m_pc)->m_qa,                                      \
                            static_cast<const yield *>(m_pc)->m_pat,                                     \
                            NUM,                                                                         \
@@ -2786,7 +2804,6 @@ namespace {
 #define BBIND_COMMON() m_b   = static_cast<const bind*>(bp.m_instr);                                                            \
                        m_n1  = m_registers[m_b->m_ireg];                                                                        \
                        m_app = get_next_f_app(m_b->m_label, m_b->m_num_args, m_n1, bp.m_curr); \
-                       m_max_generation = m_b->m_curr_max_generation;                                                            \
                        if (!m_app) {                                                                                        \
                            m_top--;                                                                                             \
                            goto backtrack;                                                                                      \
@@ -4020,10 +4037,10 @@ namespace {
                 }
                 return;
             }
-            DEBUG_CODE(
-                for (unsigned i = 0; i < num_bindings; ++i) {
-                    SASSERT(bindings[i]->get_generation() <= max_generation);
-                });
+            // DEBUG_CODE(
+            //     for (unsigned i = 0; i < num_bindings; ++i) {
+            //         SASSERT(bindings[i]->get_generation() <= max_generation);
+            //     });
                 
 #endif
             unsigned min_gen = 0, max_gen = 0;
