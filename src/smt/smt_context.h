@@ -1199,14 +1199,6 @@ namespace smt {
 
         static bool is_eq(enode const * n1, enode const * n2) { return n1->get_root() == n2->get_root(); }
 
-        enode * get_cg_root(enode * n) const {
-            if (n->get_num_args() == 0 || !n->is_cgc_enabled() || n->is_true_eq())
-                return n->get_cg();
-            enode * r = m_cg_table.find(n);
-            SASSERT(r != nullptr);
-            return r;
-        }
-
         bool is_diseq(enode * n1, enode * n2) const;
 
         bool is_diseq_slow(enode * n1, enode * n2) const;
