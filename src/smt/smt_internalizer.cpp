@@ -106,8 +106,7 @@ namespace smt {
         if (e->is_eq())
             return;
 
-        enode *cgr = e->get_num_args() == 0 ? e : get_cg_root(e);
-        if (0 < m_generation && m_generation < get_generation(cgr)) {
+        if (0 < m_generation && m_generation < get_generation(e)) {
             if (e->uses_cg_table())
                 set_generation_sticky(e, m_generation);
             else
@@ -1081,7 +1080,7 @@ namespace smt {
             if (e->is_true_eq()) {
                 bool_var v = enode2bool_var(e);
                 assign(literal(v), mk_justification(eq_propagation_justification(e->get_arg(0), e->get_arg(1))));
-                e->m_cg    = e;
+                e->m_is_cgr = true;
                 push_eq(e, m_true_enode, eq_justification());
             }
             else {
@@ -1091,17 +1090,17 @@ namespace smt {
                         // We don't support patterns with equality so there is no need to track generations for them.
                         if (!e->is_eq())
                             merge_cgc_generations(e, generation, e_prime, sibling_gen_ptr);
-                        e->m_cg = e_prime;
+                        e->m_is_cgr = false;
                         push_new_congruence(e, e_prime, used_commutativity);
                     }
                     else {
-                        e->m_cg = e;
+                        e->m_is_cgr = true;
                     }
                 }
                 else {
                     SASSERT(!e->uses_cg_table());
                     m_constant_generations.insert(e, generation);
-                    e->m_cg = e;
+                    e->m_is_cgr = true;
                 }
             }
             if (!e->is_eq()) {
@@ -1112,6 +1111,7 @@ namespace smt {
             }
         } else {
             m_constant_generations.insert(e, generation);
+            e->m_is_cgr = false;
         }
 
         SASSERT(e_internalized(n));

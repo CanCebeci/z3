@@ -817,7 +817,7 @@ namespace smt {
             enode * r = get_enode(v)->get_root();                
             if (is_representative(v) && ctx.is_relevant(r)) {
                 for (enode * parent : r->get_const_parents()) {
-                    if (parent->get_cg() == parent &&
+                    if (parent->is_cgr() &&
                         ctx.is_relevant(parent) &&
                         is_select(parent) &&
                         parent->get_arg(0)->get_root() == r) {

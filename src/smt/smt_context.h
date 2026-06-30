@@ -1191,7 +1191,9 @@ namespace smt {
         }
 
         void push_new_congruence(enode * n1, enode * n2, bool used_commutativity) {
-            SASSERT(n1->m_cg == n2);
+            SASSERT(n1->is_cgr() == false);
+            SASSERT(n2->is_cgr() == true);
+            SASSERT(congruent(n1, n2));
             // if (is_relevant(n1)) mark_as_relevant(n2);
             push_eq(n1, n2, eq_justification::mk_cg(used_commutativity));
         }
@@ -1228,7 +1230,7 @@ namespace smt {
         enode * get_cg_root(enode * n) const {
             SASSERT(n->get_num_args() > 0);
             if (!n->uses_cg_table())
-                return n->get_cg();
+                return n;
             auto r = m_cg_table.find(n);
             SASSERT(r != nullptr);
             return r;

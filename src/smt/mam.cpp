@@ -3611,12 +3611,11 @@ namespace {
                         func_decl * lbl            = curr_parent->get_decl();
                         bool is_flat_assoc         = lbl->is_flat_associative();
                         enode * curr_parent_root   = curr_parent->get_root();
-                        enode * curr_parent_cg     = curr_parent->get_cg();
                         TRACE(mam_path_tree, tout << "processing parent:\n" << mk_pp(curr_parent->get_expr(), m) << "\n";);
                         TRACE(mam_path_tree, tout << "parent is marked: " << curr_parent->is_marked() << "\n";);
                         if (filter.may_contain(m_lbl_hasher(lbl)) &&
                             !curr_parent->is_marked() &&
-                            (curr_parent_cg == curr_parent || !is_eq(curr_parent_cg, curr_parent_root)) &&
+                            (curr_parent->is_cgr() || !is_eq(m_context.get_cg_root(curr_parent), curr_parent_root)) &&
                             m_context.is_relevant(curr_parent)
                             ) {
                             path_tree * curr_tree = t;

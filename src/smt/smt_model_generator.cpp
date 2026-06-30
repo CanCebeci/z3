@@ -433,7 +433,7 @@ namespace smt {
             if (num_args == 0 && include_func_interp(f)) {
                 m_model->register_decl(f, get_value(n));
             }
-            else if (num_args > 0 && n->get_cg() == n && include_func_interp(f)) {
+            else if (num_args > 0 && n->is_cgr() && include_func_interp(f)) {
                 ptr_buffer<expr> args;
                 expr * result = get_value(n);
                 SASSERT(result);
@@ -449,7 +449,7 @@ namespace smt {
                 }
                 SASSERT(m_model->has_interpretation(f));
                 SASSERT(m_model->get_func_interp(f) == fi);
-                // The entry must be new because n->get_cg() == n
+                // The entry must be new because n->is_cgr() == true
                 TRACE(model, 
                       tout << "insert new entry for:\n" << mk_ismt2_pp(n->get_expr(), m) << "\nargs: ";
                       for (unsigned i = 0; i < num_args; ++i) {

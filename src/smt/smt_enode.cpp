@@ -33,13 +33,13 @@ namespace smt {
         n->m_owner            = owner;
         n->m_root             = n;
         n->m_next             = n;
-        n->m_cg               = nullptr;
         n->m_class_size       = 1;
         n->m_func_decl_id     = UINT_MAX;
         n->m_mark             = false;
         n->m_mark2            = false;
         n->m_interpreted      = false;
         n->m_suppress_args    = suppress_args;
+        n->m_is_demoted       = false;  
         n->m_eq               = m.is_eq(owner);
         n->m_commutative      = n->get_num_args() == 2 && owner->get_decl()->is_commutative();
         n->m_bool             = m.is_bool(owner);

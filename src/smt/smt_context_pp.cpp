@@ -381,7 +381,6 @@ namespace smt {
         SASSERT(n->is_eq());
         out << "#" << n->get_owner_id()
             << ", root: #" << n->get_root()->get_owner_id()
-            << ", cg: #" << n->m_cg->get_owner_id()
             << ", val: " << get_assignment(enode2bool_var(n))
             << ", lhs: #" << n->get_arg(0)->get_owner_id()
             << ", rhs: #" << n->get_arg(1)->get_owner_id()

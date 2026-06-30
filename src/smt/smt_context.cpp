@@ -700,8 +700,9 @@ namespace smt {
                     r2_parents.push_back(parent);
                     continue;
                 }
-                
-                parent->m_cg = parent_prime;
+
+                parent->m_is_cgr = false;
+                parent->m_is_demoted = true;
                 merge_cgc_generations(parent, parent_generation, parent_prime, gen_ptr);
 
                 if (parent_prime->m_root != parent->m_root) {
@@ -1010,16 +1011,15 @@ namespace smt {
         for (enode * parent : enode::parents(r1)) {
             TRACE(add_eq_parents, tout << "visiting: #" << parent->get_owner_id() << "\n";);
             if (parent->is_cgc_enabled()) {
-                enode * cg = parent->m_cg;
                 if (!parent->is_true_eq() &&
-                    (parent == cg ||            // parent was root of the congruence class before and after the merge
-                     !congruent(parent, cg))    // parent was root of the congruence class before but not after the merge
+                    (parent->is_cgr() ||        // parent was root of the congruence class before and after the merge
+                     parent->is_demoted())    // parent was root of the congruence class before but not after the merge
                      ) {
 
                     unsigned gen;
                     if (parent->is_eq()) {
                         gen = 0;
-                    } else if (parent == cg) {
+                    } else if (parent->is_cgr()) {
                         if (m_r1_parent_generations.contains(parent)) {
                             gen = m_r1_parent_generations.find(parent);
                         } else {
@@ -1033,10 +1033,11 @@ namespace smt {
                         gen = dummy_generation;
                     }
 
-                    auto [parent_cg, used_commutativity, gen_ptr] = m_cg_table.insert(parent, gen);
+                    auto [parent_cgr, used_commutativity, gen_ptr] = m_cg_table.insert(parent, gen);
                     (void)used_commutativity;
                     (void)gen_ptr;
-                    parent->m_cg = parent_cg;
+                    parent->m_is_cgr = (parent == parent_cgr);
+                    parent->m_is_demoted = !parent->m_is_cgr;
                 }
             }
         }
