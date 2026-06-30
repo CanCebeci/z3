@@ -132,8 +132,8 @@ namespace smt {
 
         friend class tmp_enode;
 
-        static enode * init(ast_manager & m, void * mem, app2enode_t const & app2enode, expr * owner, 
-                            unsigned generation, bool suppress_args, bool merge_tf, unsigned iscope_lvl,
+        static enode * init(ast_manager & m, void * mem, app2enode_t const & app2enode, app * owner, 
+                            bool suppress_args, bool merge_tf, unsigned iscope_lvl,
                             bool cgc_enabled, bool update_children_parent);
     public:
 

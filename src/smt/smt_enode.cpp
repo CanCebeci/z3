@@ -22,11 +22,12 @@ Revision History:
 
 namespace smt {
 
+
     /**
        \brief Initialize an enode in the given memory position.
     */
-    enode * enode::init(ast_manager & m, void * mem, app2enode_t const & app2enode, expr * owner, 
-                        unsigned generation, bool suppress_args, bool merge_tf, unsigned iscope_lvl,
+    enode * enode::init(ast_manager & m, void * mem, app2enode_t const & app2enode, app * owner, 
+                        bool suppress_args, bool merge_tf, unsigned iscope_lvl,
                         bool cgc_enabled, bool update_children_parent) {
         SASSERT(m.is_bool(owner) || !merge_tf);
         enode * n             = new (mem) enode();
@@ -35,7 +36,6 @@ namespace smt {
         n->m_next             = n;
         n->m_cg               = nullptr;
         n->m_class_size       = 1;
-        n->m_generation       = generation;
         n->m_func_decl_id     = UINT_MAX;
         n->m_mark             = false;
         n->m_mark2            = false;
@@ -70,13 +70,13 @@ namespace smt {
         SASSERT(m.is_bool(owner) || !merge_tf);
         unsigned sz           = get_enode_size(suppress_args || !::is_app(owner) ? 0 : to_app(owner)->get_num_args());
         void * mem            = r.allocate(sz);
-        return init(m, mem, app2enode, owner, generation, suppress_args, merge_tf, iscope_lvl, cgc_enabled, update_children_parent);
+        return init(m, mem, app2enode, owner, suppress_args, merge_tf, iscope_lvl, cgc_enabled, update_children_parent);
     }
 
     enode * enode::mk_dummy(ast_manager & m, app2enode_t const & app2enode, app * owner) {
         unsigned sz           = get_enode_size(owner->get_num_args());
         void * mem            = alloc_svect(char, sz);
-        return init(m, mem, app2enode, owner, 0, false, false, 0, true, false);
+        return init(m, mem, app2enode, owner, false, false, 0, true, false);
     }
 
     void enode::del_eh(ast_manager & m, bool update_children_parent) {
