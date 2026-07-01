@@ -638,6 +638,16 @@ namespace smt {
             return max;
         }
 
+        unsigned get_max_generation(unsigned num_enodes, enode * const * enodes) {
+            unsigned max = 0;
+            for (unsigned i = 0; i < num_enodes; ++i) {
+                unsigned curr = get_generation(enodes[i]);
+                if (curr > max)
+                    max = curr;
+            }
+            return max;
+        }
+
         void set_generation(enode * e, unsigned generation);
 
         /**
