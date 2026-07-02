@@ -905,7 +905,7 @@ namespace smt {
                 return;
             IF_VERBOSE(10, verbose_stream() << "ho_matching: propagate(), mam.has_work=" << m_mam->has_work() << "\n");
             m_mam->match();
-            if (!m_context->relevancy() && use_ematching()) {
+            if (use_ematching()) {
                 ptr_vector<enode>::const_iterator it  = m_context->begin_enodes();
                 ptr_vector<enode>::const_iterator end = m_context->end_enodes();
                 unsigned sz = static_cast<unsigned>(end - it);
