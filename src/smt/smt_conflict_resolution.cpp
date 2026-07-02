@@ -497,11 +497,25 @@ namespace smt {
             switch (js.get_kind()) {
                 case b_justification::CLAUSE: {
                     clause * cls = js.get_clause();
+                    literal_vector antecedents;
+                    unsigned num_lits = cls->get_num_literals();
+                    unsigned i        = 0;
+                    if (consequent != false_literal) {
+                        SASSERT((*cls)[0] == consequent || (*cls)[1] == consequent);
+                        if ((*cls)[0] == consequent) {
+                            i = 1;
+                        }
+                        else {
+                            i = 2;
+                        }
+                    }
+                    for (; i < num_lits; ++i)
+                        antecedents.push_back(~(*cls)[i]);
                     m.trace_stream() << " --- conflict (clause) --- \n";
-                    // m_ctx.display_clause_smt2(m.trace_stream(), *cls);
-                    m.trace_stream() << literal_vector(cls->get_num_literals(), cls->begin()) << ": ";
-                    m_ctx.display_clause(m.trace_stream(), cls);
+                    m.trace_stream() << " --- justification lits for " << consequent << " --- \n" << antecedents << "\n";
+                    m_ctx.display_literals_verbose(m.trace_stream(), antecedents.size(), antecedents.data(), /*full=*/true);
                     m.trace_stream() << "\n";
+                    m.trace_stream() << " --- end justification --- \n";
                     m.trace_stream() << " --- end of conflict (clause) --- \n";
                     break;
                 }
