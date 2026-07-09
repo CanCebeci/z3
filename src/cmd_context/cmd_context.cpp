@@ -1370,8 +1370,24 @@ void cmd_context::mk_app(symbol const & s, unsigned num_args, expr * const * arg
 
     if (try_mk_macro_app(s, num_args, args, num_indices, indices, range, result))
         return;
-    if (try_mk_declared_app(s, num_args, args, num_indices, indices, range, result))
-        return;   
+    if (try_mk_declared_app(s, num_args, args, num_indices, indices, range, result)) {
+        if (s.str().starts_with("internal_sk!")) {
+            symbol name(s.str().substr(12));
+            // This is an internal generates symbol not present in the command context.
+            ptr_buffer<sort> sorts;
+            for (unsigned i = 0; i < num_args; ++i) {
+                sorts.push_back(args[i]->get_sort());
+            }
+
+            func_decl_info info(null_family_id, null_decl_kind);
+            info.m_skolem = true;
+
+            bool res = m().find_func_decl(name, num_args, sorts.data(), to_app(result)->get_decl()->get_range(), &info);
+            std::cerr << "Looking up symbol " << name <<  ":  " << res << "\n";
+            return;
+        }
+        return;
+    }   
     if (try_mk_builtin_app(s, num_args, args, num_indices, indices, range, result)) 
         return;
     if (!range && try_mk_pdecl_app(s, num_args, args, num_indices, indices, result))

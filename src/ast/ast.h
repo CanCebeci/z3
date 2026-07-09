@@ -1638,6 +1638,8 @@ public:
     bool are_distinct(expr * a, expr * b) const;
 
     bool contains(ast * a) const { return m_ast_table.contains(a); }
+    
+    bool find_func_decl(symbol const & name, unsigned arity, sort * const * domain, sort * range, func_decl_info * info);
    
     unsigned get_num_asts() const { return m_ast_table.size(); }
 
