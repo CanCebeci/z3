@@ -628,6 +628,18 @@ func_decl * decl_plugin::mk_func_decl(decl_kind k, unsigned num_parameters, para
     return mk_func_decl(k, num_parameters, parameters, num_args, sorts.data(), range);
 }
 
+
+bool ast_manager::find_func_decl(symbol const & name, unsigned arity, sort * const * domain, sort * range, func_decl_info * info) {
+    unsigned sz               = func_decl::get_obj_size(arity);
+    void * mem                = allocate_node(sz);
+
+    func_decl* new_node = new (mem) func_decl(name, arity, domain, range, info);
+    new_node->m_hash = get_node_hash(new_node);
+    bool found = m_ast_table.contains(new_node);
+    deallocate_node(new_node, sz);
+    return found;
+}
+
 // -----------------------------------
 //
 // basic_decl_plugin (i.e., builtin plugin)
@@ -1983,6 +1995,9 @@ func_decl * ast_manager::mk_func_decl(symbol const & name, unsigned arity, sort 
     new_node = register_node(new_node);
     if (is_polymorphic_root) 
         m_poly_roots.insert(new_node, new_node);
+
+    std::cerr << "Registered: " << new_node->get_id() << ": " << name.str() << " " << new_node->hash() << "\n";
+
     return new_node;
 }
 
