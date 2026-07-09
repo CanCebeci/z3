@@ -2788,7 +2788,8 @@ namespace smt2 {
             m_ctx.regular_stream() << "(";
             expr ** expr_it  = expr_stack().data() + spos;
             expr ** expr_end = expr_it + m_cached_strings.size();
-            md->compress();
+            // CC: This somehow gets in the way of the skolem hack.
+            // md->compress();
             for (unsigned i = 0; expr_it < expr_end; ++expr_it, ++i) {
                 model::scoped_model_completion _scm(md, m_ctx.params().m_model_completion);
                 expr_ref v = (*md)(*expr_it);

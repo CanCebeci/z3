@@ -1371,9 +1371,9 @@ void cmd_context::mk_app(symbol const & s, unsigned num_args, expr * const * arg
     if (try_mk_macro_app(s, num_args, args, num_indices, indices, range, result))
         return;
     if (try_mk_declared_app(s, num_args, args, num_indices, indices, range, result)) {
+        // CC: hacky way to handle skolems for find_missing_steps.py
         if (s.str().starts_with("internal_sk!")) {
             symbol name(s.str().substr(12));
-            // This is an internal generates symbol not present in the command context.
             ptr_buffer<sort> sorts;
             for (unsigned i = 0; i < num_args; ++i) {
                 sorts.push_back(args[i]->get_sort());
@@ -1382,8 +1382,14 @@ void cmd_context::mk_app(symbol const & s, unsigned num_args, expr * const * arg
             func_decl_info info(null_family_id, null_decl_kind);
             info.m_skolem = true;
 
-            bool res = m().find_func_decl(name, num_args, sorts.data(), to_app(result)->get_decl()->get_range(), &info);
-            std::cerr << "Looking up symbol " << name <<  ":  " << res << "\n";
+            func_decl * sk_func = m().find_func_decl(name, num_args, sorts.data(), to_app(result)->get_decl()->get_range(), &info);
+            if (!sk_func) {
+                std::cerr << "Failed to find skolem function for " << s << "\n";
+                exit(1);
+            }
+            
+            //  rebuild the result with the found function declaration
+            result = m().mk_app(sk_func, num_args, args);
             return;
         }
         return;
