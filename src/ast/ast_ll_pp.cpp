@@ -298,10 +298,16 @@ public:
             return;
         }
 
-        if (!is_app(n) || depth == 0 || to_app(n)->get_num_args() == 0) {
+        if (depth == 0) {
+            display_child_ref(n);
+            return;
+        }
+
+        if (!is_app(n) || to_app(n)->get_num_args() == 0) {
             display_child(n);
             return;
         }
+
         unsigned num_args = to_app(n)->get_num_args();
         
         if (num_args > 0) 
