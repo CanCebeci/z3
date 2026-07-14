@@ -31,6 +31,7 @@ Revision History:
 #include "smt/mam.h"
 #include "smt/qi_queue.h"
 #include "util/statistics.h"
+#include "util/hash.h"
 #include "util/obj_hashtable.h"
 
 namespace smt {
@@ -305,7 +306,12 @@ namespace smt {
             max_generation = std::max(max_generation, get_generation(q));
             
             get_stat(q)->update_max_generation(max_generation);
-            fingerprint * f = m_context.add_fingerprint(q, q->get_id(), num_bindings, bindings);
+
+            // Generation-independent fingerprint to keep track of whether an instance happened at any generation. (see context::contains_instance)
+            m_context.add_fingerprint(q, q->get_id(), num_bindings, bindings);   
+
+            // Generation-dependent fingerprint to ensure we don't add the same instance multiple times for the same generation.
+            fingerprint * f = m_context.add_fingerprint(q, hash_u_u(q->get_id(), max_generation), num_bindings, bindings);
             if (f) {
                 if (is_trace_enabled(TraceTag::causality)) {
                     log_causality(f,pat,used_enodes);
