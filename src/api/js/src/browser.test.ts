@@ -14,7 +14,7 @@ import { init } from './browser';
 
 describe('browser init', () => {
   beforeEach(() => {
-    delete (global as any).initZ3;
+    delete (globalThis as any).initZ3;
     mockInitWrapper.mockReset();
     mockCreateApi.mockReset();
   });
@@ -24,7 +24,7 @@ describe('browser init', () => {
     const locateFile = jest.fn((file: string) => `https://example.test/${file}`);
     const lowLevel = { Z3: { low: true }, em: { module: true } };
     const highLevel = { Context: jest.fn() };
-    (global as any).initZ3 = initZ3;
+    (globalThis as any).initZ3 = initZ3;
     mockInitWrapper.mockResolvedValue(lowLevel);
     mockCreateApi.mockReturnValue(highLevel);
 
