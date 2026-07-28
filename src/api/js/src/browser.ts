@@ -5,7 +5,7 @@ export { Z3Core, Z3LowLevel } from './low-level';
 export * from './low-level/types.__GENERATED__';
 
 export async function init(moduleOverrides: Z3ModuleOverrides = {}): Promise<Z3LowLevel & Z3HighLevel> {
-  const initZ3 = (global as any).initZ3;
+  const initZ3 = (globalThis as any).initZ3;
   if (initZ3 === undefined) {
     throw new Error('initZ3 was not imported correctly. Please consult documentation on how to load Z3 in browser');
   }
