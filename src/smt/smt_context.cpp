@@ -711,11 +711,6 @@ namespace smt {
                             m_dyn_ack_manager.cg_conflict_eh(n1->get_app(), n2->get_app());
                         assign(literal(v), mk_justification(eq_propagation_justification(lhs, rhs)));
                     }
-                    if (parent->is_cgc_enabled()) {
-                        auto [p, parent_generation] = m_r1_parent_generations[cgc_enabled_idx++];
-                        SASSERT(p == parent);
-                        m_constant_generations.insert(parent, parent_generation);
-                    }
                     // It is not necessary to reinsert the equality to the congruence table
                     // (because the only congruence propagations that could lead to are already handled by the assign() here).
                     continue;
@@ -740,7 +735,6 @@ namespace smt {
                     r2_parents.push_back(parent);
                     continue;
                 }
-                
                 
                 parent->m_cg = parent_prime;
                 merge_cgc_generations(parent, parent_generation, parent_prime);
