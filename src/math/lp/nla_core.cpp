@@ -1318,43 +1318,45 @@ lbool core::check(unsigned level) {
 
     auto no_effect = [&]() { return ret == l_undef && !done() && !m_nla_satisfied && m_lemmas.empty() && m_literals.empty() && !m_check_feasible; };
     
-    if (no_effect())
+    if (no_effect()) {
+        optimize_nl_bounds();
         m_monomial_bounds.generate_lemmas();
+    }
 
-    if (no_effect() && refine_pseudo_linear())
-        return l_false;
+    // if (no_effect() && refine_pseudo_linear())
+    //     return l_false;
        
     
-    {
-        std::function<void(void)> check1 = [&]() { if (no_effect() && run_horner) m_horner.horner_lemmas(); };
-        std::function<void(void)> check2 = [&]() { if (no_effect() && run_grobner) m_grobner(); };
-        std::function<void(void)> check3 = [&]() { if (no_effect() && run_bounds) add_bounds(); };
+    // {
+    //     std::function<void(void)> check1 = [&]() { if (no_effect() && run_horner) m_horner.horner_lemmas(); };
+    //     std::function<void(void)> check2 = [&]() { if (no_effect() && run_grobner) m_grobner(); };
+    //     std::function<void(void)> check3 = [&]() { if (no_effect() && run_bounds) add_bounds(); };
 
-        std::pair<unsigned, std::function<void(void)>> checks[] =
-            { {1, check1},
-              {1, check2},
-              {1, check3} };
-        check_weighted(3, checks);
+    //     std::pair<unsigned, std::function<void(void)>> checks[] =
+    //         { {1, check1},
+    //           {1, check2},
+    //           {1, check3} };
+    //     check_weighted(3, checks);
 
-        if (lp_settings().get_cancel_flag())
-            return l_undef;
-        if (!m_lemmas.empty() || !m_literals.empty() || m_check_feasible)
-            return l_false;
-        // bound optimization proved all monomials consistent: goal satisfied.
-        if (m_nla_satisfied)
-            return l_true;
-    }
+    //     if (lp_settings().get_cancel_flag())
+    //         return l_undef;
+    //     if (!m_lemmas.empty() || !m_literals.empty() || m_check_feasible)
+    //         return l_false;
+    //     // bound optimization proved all monomials consistent: goal satisfied.
+    //     if (m_nla_satisfied)
+    //         return l_true;
+    // }
 
-    if (no_effect() && params().arith_nl_nra_check_assignment() && m_check_assignment_fail_cnt < params().arith_nl_nra_check_assignment_max_fail()) {
-        scoped_limits sl(m_reslim);
-        sl.push_child(&m_nra_lim);
-        ret = m_nra.check_assignment();
-        if (ret != l_true)
-            ++m_check_assignment_fail_cnt;
-    }
+    // if (no_effect() && params().arith_nl_nra_check_assignment() && m_check_assignment_fail_cnt < params().arith_nl_nra_check_assignment_max_fail()) {
+    //     scoped_limits sl(m_reslim);
+    //     sl.push_child(&m_nra_lim);
+    //     ret = m_nra.check_assignment();
+    //     if (ret != l_true)
+    //         ++m_check_assignment_fail_cnt;
+    // }
 
-    if (no_effect() && should_run_bounded_nlsat()) 
-        ret = bounded_nlsat();
+    // if (no_effect() && should_run_bounded_nlsat()) 
+    //     ret = bounded_nlsat();
                 
     if (no_effect()) 
         m_basics.basic_lemma(true); 
@@ -1362,38 +1364,38 @@ lbool core::check(unsigned level) {
     if (no_effect()) 
         m_basics.basic_lemma(false);
 
-    if (no_effect()) 
-        m_divisions.check();
+    // if (no_effect()) 
+    //     m_divisions.check();
 
 
-    if (no_effect()) {
-        std::function<void(void)> check1 = [&]() { m_order.order_lemma();
-        };
-        std::function<void(void)> check2 = [&]() { m_monotone.monotonicity_lemma();
-        };
-        std::function<void(void)> check3 = [&]() { m_tangents.tangent_lemma();
-        };
+    // if (no_effect()) {
+    //     std::function<void(void)> check1 = [&]() { m_order.order_lemma();
+    //     };
+    //     std::function<void(void)> check2 = [&]() { m_monotone.monotonicity_lemma();
+    //     };
+    //     std::function<void(void)> check3 = [&]() { m_tangents.tangent_lemma();
+    //     };
         
-        std::pair<unsigned, std::function<void(void)>> checks[] = 
-            { { 6, check1 }, 
-              { 2, check2 }, 
-              { 1, check3 }};
-        check_weighted(3, checks);
+    //     std::pair<unsigned, std::function<void(void)>> checks[] = 
+    //         { { 6, check1 }, 
+    //           { 2, check2 }, 
+    //           { 1, check3 }};
+    //     check_weighted(3, checks);
 
-        unsigned num_calls = lp_settings().stats().m_nla_calls;
-        if (!conflict_found() && params().arith_nl_nra() && num_calls % 50 == 0 && num_calls > 500) 
-            ret = bounded_nlsat();
-    }
+    //     unsigned num_calls = lp_settings().stats().m_nla_calls;
+    //     if (!conflict_found() && params().arith_nl_nra() && num_calls % 50 == 0 && num_calls > 500) 
+    //         ret = bounded_nlsat();
+    // }
 
-    if (no_effect() && params().arith_nl_nra() && level >= 2) {
-        scoped_limits sl(m_reslim);
-        sl.push_child(&m_nra_lim);
-        params_ref p;
-        p.set_uint("max_conflicts", lp_settings().m_max_conflicts);
-        m_nra.updt_params(p);
-        ret = m_nra.check();
-        lp_settings().stats().m_nra_calls++;
-    }
+    // if (no_effect() && params().arith_nl_nra() && level >= 2) {
+    //     scoped_limits sl(m_reslim);
+    //     sl.push_child(&m_nra_lim);
+    //     params_ref p;
+    //     p.set_uint("max_conflicts", lp_settings().m_max_conflicts);
+    //     m_nra.updt_params(p);
+    //     ret = m_nra.check();
+    //     lp_settings().stats().m_nra_calls++;
+    // }
     
     if (ret == l_undef && !no_effect() && m_reslim.inc()) 
         ret = l_false;
