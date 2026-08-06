@@ -1579,7 +1579,7 @@ bool core::optimize_nl_bounds() {
         return false;
 
     trail().push(value_trail(m_bounds_optimization_enabled));
-    m_bounds_optimization_enabled = false;
+    //m_bounds_optimization_enabled = false;
 
     if (!lra.is_feasible())
         return false;
