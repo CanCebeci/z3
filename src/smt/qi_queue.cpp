@@ -162,6 +162,7 @@ namespace smt {
             quantifier * qa    = static_cast<quantifier*>(f->get_data());
 
             if (curr.m_cost <= m_eager_cost_threshold) {
+                std::cerr << "[Eager instantiation] " << mk_pp(qa, m) << "\n";
                 instantiate(curr);
             }
             else if (m_params.m_qi_promote_unsat && m_checker.is_unsat(qa->get_expr(), f->get_num_args(), f->get_args())) {
