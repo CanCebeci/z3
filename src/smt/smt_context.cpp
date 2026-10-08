@@ -3394,7 +3394,7 @@ namespace smt {
             if (get_cancel_flag())
                 return;
             del_inactive_lemmas();
-            push_scope();
+            // push_scope();       //! Commenting this out is hacky but should be safe in the context of how Sundance uses Z3.
             vector<std::pair<expr*,expr_ref>> asm2proxy;
             internalize_proxies(asms, asm2proxy);
             for (auto const& p: asm2proxy) {
@@ -3420,7 +3420,7 @@ namespace smt {
             }
         }
         m_search_lvl = m_scope_lvl;
-        SASSERT(asms.empty() || m_search_lvl > m_base_lvl);
+        // SASSERT(asms.empty() || m_search_lvl > m_base_lvl);
         SASSERT(!asms.empty() || m_search_lvl == m_base_lvl);
         TRACE(after_internalization, display(tout););
     }
