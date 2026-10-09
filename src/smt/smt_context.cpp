@@ -3468,7 +3468,7 @@ namespace smt {
             }
         }
         reset_assumptions();
-        pop_to_base_lvl(); // undo the push_scope() performed by init_assumptions
+        // pop_to_base_lvl(); // undo the push_scope() performed by init_assumptions
         m_search_lvl = m_base_lvl;
         std::sort(m_unsat_core.data(), m_unsat_core.data() + m_unsat_core.size(), ast_lt_proc());
         TRACE(unsat_core_bug, tout << "unsat core:\n" << m_unsat_core << "\n";);

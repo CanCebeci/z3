@@ -530,7 +530,7 @@ namespace smt {
         }
 
         bool tracking_assumptions() const {
-            return !m_assumptions.empty() && m_search_lvl > m_base_lvl;
+            return !m_assumptions.empty(); // && m_search_lvl > m_base_lvl;
         }
 
         expr * bool_var2expr(bool_var v) const {
