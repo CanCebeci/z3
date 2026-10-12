@@ -148,6 +148,15 @@ void asserted_formulas::set_eliminate_and(bool flag) {
 }
 
 
+void asserted_formulas::rewrite_as_asserted(expr * e, expr_ref & result) {
+    result = e;
+    if (!m_smt_params.m_preprocess)
+        return;
+    set_eliminate_and(false);
+    proof_ref pr(m);
+    m_rewriter(e, result, pr);
+}
+
 void asserted_formulas::assert_expr(expr * e, proof * _in_pr) {
     force_push();
     proof_ref  in_pr(_in_pr, m), pr(_in_pr, m);

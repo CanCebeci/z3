@@ -117,6 +117,15 @@ public:
 
     virtual void assert_expr_core(expr * t) = 0;
 
+    /**
+       \brief Internalize `t` without asserting it, so that assertions that
+       contain it later reuse its internal representation. Only solvers built
+       on the SMT core support this.
+    */
+    virtual void internalize(expr * t) {
+        throw default_exception("internalize is not supported by this solver");
+    }
+
     void assert_expr(expr_ref_vector const& ts) { 
         for (expr* e : ts) assert_expr(e);
     }

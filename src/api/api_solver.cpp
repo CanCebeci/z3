@@ -538,6 +538,16 @@ extern "C" {
         Z3_CATCH;
     }
 
+    void Z3_API Z3_solver_internalize(Z3_context c, Z3_solver s, Z3_ast a) {
+        Z3_TRY;
+        LOG_Z3_solver_internalize(c, s, a);
+        RESET_ERROR_CODE();
+        init_solver(c, s);
+        CHECK_IS_EXPR(a,);
+        to_solver_ref(s)->internalize(to_expr(a));
+        Z3_CATCH;
+    }
+
     void Z3_API Z3_solver_assert_and_track(Z3_context c, Z3_solver s, Z3_ast a, Z3_ast p) {
         Z3_TRY;
         LOG_Z3_solver_assert_and_track(c, s, a, p);

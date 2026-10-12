@@ -252,6 +252,9 @@ namespace smt {
         //
         // -----------------------------------
         uint_set m_all_th_case_split_literals;
+        // Boolean vars of atoms from internalize_unasserted; decide() never
+        // splits on them
+        uint_set m_never_decide;
         vector<literal_vector> m_th_case_split_sets;
         u_map< vector<literal_vector> > m_literal2casesplitsets; // returns the case split literal sets that a literal participates in
 
@@ -1668,6 +1671,21 @@ namespace smt {
         void add_asserted(expr* e);
 
         void assert_expr(expr * e);
+
+        /**
+           \brief Internalize `e` at the base level without asserting it: its
+           Boolean variable or e-node, and the theory variables (e.g. tableau
+           columns) of it and its subterms, are created as for an assertion
+           that contains it, but nothing about `e` is assumed. `e` is
+           rewritten as assertions are first, so that an assertion containing
+           `e` later reuses what this created.
+
+           If `e` is an atom (or its negation), the search never decides it:
+           it gets a value only by propagation, e.g. from an assertion
+           `tracker => e` under an assumed tracker. Call it outside every
+           user scope, since the record of such atoms isn't undone by a pop.
+        */
+        void internalize_unasserted(expr * e);
 
         void assert_expr(expr * e, proof * pr);
 

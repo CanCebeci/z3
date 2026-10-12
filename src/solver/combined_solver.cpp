@@ -166,6 +166,12 @@ public:
         m_solver2->assert_expr(t);
     }
 
+    // Only the incremental solver keeps internal state across checks
+    void internalize(expr * t) override {
+        switch_inc_mode();
+        m_solver2->internalize(t);
+    }
+
     void assert_expr_core2(expr * t, expr * a) override {
         if (m_check_sat_executed)
             switch_inc_mode();

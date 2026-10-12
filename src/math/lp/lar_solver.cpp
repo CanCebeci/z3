@@ -1583,6 +1583,10 @@ namespace lp {
         m_imp->m_var_register.set_name(vi, name);
     }
 
+    unsigned lar_solver::num_scopes() const {
+        return m_imp->m_trail.get_num_scopes();
+    }
+
     std::string lar_solver::get_variable_name(lpvar j) const {
         if (column_has_term(j))
             return std::string("_t") + T_to_string(j);
@@ -1891,6 +1895,18 @@ namespace lp {
         undo_add_column(lar_solver& s) : s(s) {}
         void undo() override {
             auto& col = s.m_imp->m_columns.back();
+            if (sundance_trace_enabled()) {
+                unsigned j = s.m_imp->m_columns.size() - 1;
+                bool basic = s.get_core_solver().m_r_solver.m_basis_heading[j] >= 0;
+                std::cerr << "; z3 removed column j" << j
+                          << (basic ? " basic" : " nonbasic")
+                          << " rows=" << s.A_r().m_columns[j].size() << " : ";
+                if (col.term() != nullptr)
+                    s.print_term(*col.term(), std::cerr);
+                else
+                    std::cerr << s.get_variable_name(j);
+                std::cerr << std::endl;
+            }
             if (col.term() != nullptr) {
                 if (s.m_imp->m_need_register_terms)
                     s.deregister_normalized_term(*col.term());
@@ -2053,6 +2069,11 @@ namespace lp {
         A_r().fill_last_row_with_pivoting(*term,
                 j,
                 get_core_solver().m_r_solver.m_basis_heading); 
+        if (sundance_trace_enabled()) {
+            std::cerr << "; z3 added column j" << j << " scope=" << num_scopes() << " : ";
+            print_term(*term, std::cerr);
+            std::cerr << std::endl;
+        }
         
         
         get_core_solver().m_r_solver.update_x(j, get_basic_var_value_from_row(A_r().row_count() - 1));

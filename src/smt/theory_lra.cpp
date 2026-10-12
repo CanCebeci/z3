@@ -241,7 +241,7 @@ class theory_lra::imp {
         app_ref cnst(a.mk_numeral(rational(c), is_int), m);
         mk_enode(cnst);
         theory_var v = mk_var(cnst);
-        var = lp().add_var(v, is_int);
+        var = add_named_var(v, is_int);
         lp().push();
         add_def_constraint_and_equality(var, lp::GE, rational(c));
         add_def_constraint_and_equality(var, lp::LE, rational(c));
@@ -329,7 +329,7 @@ class theory_lra::imp {
         theory_var v = mk_var(n);
         lpvar vi = get_lpvar(v);
         if (vi == UINT_MAX) {
-            vi = lp().add_var(v, a.is_int(n));
+            vi = add_named_var(v, a.is_int(n));
             add_def_constraint_and_equality(vi, lp::GE, val);
             add_def_constraint_and_equality(vi, lp::LE, val);
             register_fixed_var(v, val);
@@ -639,7 +639,21 @@ class theory_lra::imp {
         lpvar lpv = lp().external_to_local(v);
         if (lpv != lp::null_lpvar)
             return lpv;
-        return lp().add_var(v, is_int(v));
+        return add_named_var(v, is_int(v));
+    }
+
+    // Add a column for theory var `v`. With sundance_trace_enabled(), name it after
+    // v's expression, so that traced terms print over those names, and trace it.
+    lpvar add_named_var(theory_var v, bool is_int) {
+        lpvar vi = lp().add_var(v, is_int);
+        if (sundance_trace_enabled()) {
+            std::ostringstream name;
+            name << mk_bounded_pp(get_enode(v)->get_expr(), m, 2);
+            lp().set_variable_name(vi, name.str());
+            std::cerr << "; z3 added column j" << vi << " scope=" << lp().num_scopes()
+                      << " : " << name.str() << std::endl;
+        }
+        return vi;
     }
         
     void init_left_side(scoped_internalize_state& st) {

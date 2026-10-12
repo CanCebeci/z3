@@ -80,6 +80,10 @@ namespace smt {
         m_imp->m_kernel.assert_expr(e);
     }
 
+    void kernel::internalize_unasserted(expr * e) {
+        m_imp->m_kernel.internalize_unasserted(e);
+    }
+
     void kernel::assert_expr(expr_ref_vector const& es) {
         for (unsigned i = 0; i < es.size(); ++i) 
             m_imp->m_kernel.assert_expr(es[i]);

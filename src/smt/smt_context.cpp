@@ -33,6 +33,7 @@ Revision History:
 #include "model/model.h"
 #include "model/model_pp.h"
 #include "smt/smt_context.h"
+#include "util/sundance_trace.h"
 #include "smt/smt_quick_checker.h"
 #include "smt/uses_theory.h"
 #include "smt/theory_special_relations.h"
@@ -1863,7 +1864,9 @@ namespace smt {
         
         if (!has_split_candidate(var, is_pos)) {
             lbool phase = l_undef;
-            m_case_split_queue->next_case_split(var, phase);
+            do {
+                m_case_split_queue->next_case_split(var, phase);
+            } while (var != null_bool_var && m_never_decide.contains(var));
             used_queue = true;
             if (var == null_bool_var) {
                 push_trail(value_trail(m_has_case_split, false));
@@ -1939,6 +1942,8 @@ namespace smt {
             m.trace_stream() << "[push] " << m_scope_lvl << "\n";
 
         m_scope_lvl++;
+        if (sundance_trace_enabled() && !m_is_auxiliary)
+            std::cerr << "; z3 smt push_scope -> level " << m_scope_lvl << std::endl;
         m_region.push_scope();
         m_scopes.push_back(scope());
         scope & s = m_scopes.back();
@@ -2415,6 +2420,9 @@ namespace smt {
         try {
             if (m.has_trace_stream() && !m_is_auxiliary)
                 m.trace_stream() << "[pop] " << num_scopes << " " << m_scope_lvl << "\n";
+            if (sundance_trace_enabled() && !m_is_auxiliary)
+                std::cerr << "; z3 smt pop_scope " << num_scopes << ": level " << m_scope_lvl
+                          << " -> " << m_scope_lvl - num_scopes << std::endl;
 
             // TRACE(context, tout << "backtracking: " << num_scopes << " from " << m_scope_lvl << "\n";);
             TRACE(pop_scope_detail, display(tout););
@@ -3007,6 +3015,21 @@ namespace smt {
         return false;
     }
 
+
+    void context::internalize_unasserted(expr * e) {
+        pop_to_base_lvl();
+        setup_context(false);
+        internalize_assertions();
+        expr_ref r(m);
+        m_asserted_formulas.rewrite_as_asserted(e, r);
+        if (m.is_true(r) || m.is_false(r))
+            return;
+        internalize(r, m.is_bool(r));
+        expr * atom = r;
+        m.is_not(r, atom);
+        if (m.is_bool(atom) && b_internalized(atom))
+            m_never_decide.insert(get_bool_var(atom));
+    }
 
     void context::push() {       
         pop_to_base_lvl();

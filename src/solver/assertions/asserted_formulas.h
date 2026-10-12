@@ -259,6 +259,8 @@ public:
     void setup();
     void assert_expr(expr * e, proof * in_pr);
     void assert_expr(expr * e);
+    // Rewrite `e` as `assert_expr` rewrites an assertion before storing it.
+    void rewrite_as_asserted(expr * e, expr_ref & result);
     void reset();
     void push_scope();
     void pop_scope(unsigned num_scopes);

@@ -27,6 +27,7 @@
 #include <utility>
 
 #include "math/lp/bound_analyzer_on_row.h"
+#include "util/sundance_trace.h"
 #include "math/lp/implied_bound.h"
 #include "math/lp/int_solver.h"
 #include "math/lp/lar_constraints.h"
@@ -457,6 +458,8 @@ public:
     void get_rid_of_inf_eps();
     void get_model_do_not_care_about_diff_vars(std::unordered_map<lpvar, mpq>& variable_values) const;
     std::string get_variable_name(lpvar vi) const override;
+    // Scopes pushed and not yet popped
+    unsigned num_scopes() const;
     void set_variable_name(lpvar vi, std::string);
     unsigned number_of_vars() const;
     inline bool is_base(unsigned j) const { return get_core_solver().m_r_heading[j] >= 0; }

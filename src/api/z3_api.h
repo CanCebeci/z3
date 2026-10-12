@@ -7016,6 +7016,22 @@ extern "C" {
     void Z3_API Z3_solver_assert(Z3_context c, Z3_solver s, Z3_ast a);
 
     /**
+       \brief Internalize \c a in the solver without asserting it.
+
+       The solver creates its internal representation of \c a outside every
+       scope (a Boolean variable for a formula, e-nodes and theory variables
+       such as arithmetic tableau columns for it and its subterms), as it would
+       for an assertion that contains \c a, but assumes nothing about \c a.
+       Assertions that contain \c a later reuse that representation, so it is
+       not rebuilt after a pop. Only solvers built on the SMT core support it.
+
+       \sa Z3_solver_assert
+
+       def_API('Z3_solver_internalize', VOID, (_in(CONTEXT), _in(SOLVER), _in(AST)))
+    */
+    void Z3_API Z3_solver_internalize(Z3_context c, Z3_solver s, Z3_ast a);
+
+    /**
        \brief Assert a constraint \c a into the solver, and track it (in the unsat) core using
        the Boolean constant \c p.
 

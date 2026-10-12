@@ -71,6 +71,11 @@ namespace smt {
         */
         void assert_expr(expr * e);
 
+        /**
+           \brief Internalize `e` without asserting it. See context::internalize_unasserted.
+        */
+        void internalize_unasserted(expr * e);
+
         void assert_expr(expr_ref_vector const& es);
         /**
            \brief Assert the given assertion with the given proof as a justification.
