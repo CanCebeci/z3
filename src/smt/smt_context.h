@@ -845,6 +845,8 @@ namespace smt {
                 update_generation(get_enode(to_app(e)));
         }
 
+        void update_generation_rec(expr * e, unsigned generation);
+
         typedef std::pair<expr *, bool> expr_bool_pair;
 
         void ts_visit_child(expr * n, bool gate_ctx, svector<expr_bool_pair> & todo, bool & visited);
@@ -1803,6 +1805,7 @@ namespace smt {
             if (inconsistent())
                 return;
             internalize_assertion(body, pr, generation);
+            update_generation_rec(body, generation);
             if (relevancy()) {
                 // if the instantiation creates a conflict, we backtrack immediately.
                 // to retain the conflict clause being relevant we mark it here.
