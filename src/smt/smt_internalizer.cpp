@@ -114,6 +114,41 @@ namespace smt {
         }
     }
 
+    /**
+       \brief Apply update_generation to e and all of its subterms, at the given generation.
+
+       Internalizing an expression does not reach all of its existing subterms: it stops at
+       terms that already exist, and theories may skip subterms that already have an enode.
+       So a quantifier instance is walked once after it has been internalized.
+
+       The walk follows expression arguments, not enode arguments, because enodes may
+       suppress their arguments. It continues through subterms that have no enode, and it
+       cannot stop at a subterm whose generation is already low: a generation is shared by
+       a congruence class, so a low generation says nothing about the subterm's own arguments.
+    */
+    void context::update_generation_rec(expr * e, unsigned generation) {
+        if (generation == 0)
+            return; // update_generation ignores generation 0.
+        if (!is_app(e))
+            return;
+        flet<unsigned> l(m_generation, generation);
+        update_generation(e);
+        if (to_app(e)->get_num_args() == 0)
+            return;
+        obj_hashtable<expr> visited;
+        ptr_buffer<expr> todo;
+        todo.append(to_app(e)->get_num_args(), to_app(e)->get_args());
+        while (!todo.empty()) {
+            expr * curr = todo.back();
+            todo.pop_back();
+            if (!is_app(curr) || visited.contains(curr))
+                continue;
+            visited.insert(curr);
+            update_generation(curr);
+            todo.append(to_app(curr)->get_num_args(), to_app(curr)->get_args());
+        }
+    }
+
     void context::set_generation(enode * e, unsigned generation) {
         // We don't support patterns with equality so there is no need to track generations for them.
         if (e->is_eq())

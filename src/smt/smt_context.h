@@ -826,6 +826,8 @@ namespace smt {
                 update_generation(get_enode(to_app(e)));
         }
 
+        void update_generation_rec(expr * e, unsigned generation);
+
         typedef std::pair<expr *, bool> expr_bool_pair;
 
         void ts_visit_child(expr * n, bool gate_ctx, svector<expr_bool_pair> & todo, bool & visited);
@@ -1778,6 +1780,7 @@ namespace smt {
 
         void internalize_instance(expr * body, proof * pr, unsigned generation) {
             internalize_assertion(body, pr, generation);
+            update_generation_rec(body, generation);
             if (relevancy())
                 m_case_split_queue->internalize_instance_eh(body, generation);
         }
