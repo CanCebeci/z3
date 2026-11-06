@@ -3108,6 +3108,7 @@ namespace {
         ptr_vector<code_tree>       m_tmp_trees;
         ptr_vector<func_decl>       m_tmp_trees_to_delete;
         ptr_vector<code_tree>       m_to_match;
+        unsigned                    m_max_pattern_depth = 0; // not restored on backtracking, it is only an upper bound.
         typedef std::pair<quantifier *, app *> qp_pair;
         svector<qp_pair>            m_new_patterns; // recently added patterns
 
@@ -3184,6 +3185,9 @@ namespace {
         bool is_clbl(func_decl * lbl) const {
             unsigned lbl_id = lbl->get_small_id();
             return lbl_id < m_is_clbl.size() && m_is_clbl[lbl_id];
+        }
+        bool occurs_in_pattern(func_decl * lbl) {
+            return m_trees.get_code_tree_for(lbl) != nullptr || is_plbl(lbl) || is_clbl(lbl);
         }
 
         void update_lbls(enode * n, unsigned elem) {
@@ -3855,6 +3859,7 @@ namespace {
                 return;  // patterns with quantifiers are not handled.
             update_filters(qa, mp);
             collect_ground_exprs(qa, mp);
+            m_max_pattern_depth = std::max(m_max_pattern_depth, ::get_depth(mp));
             m_new_patterns.push_back(qp_pair(qa, mp));
             // The matching abstract machine implements incremental
             // e-matching. So, for a multi-pattern [ p_1, ..., p_n ],
@@ -3989,6 +3994,46 @@ namespace {
                 TRACE(mam_bug, tout << "adding relevant candidate:\n" << mk_ll_pp(n->get_expr(), m) << "\n";);
                 if (!lazy)
                     add_candidate(n);
+            }
+        }
+
+        /**
+           \brief Make the terms whose matches depend on the given enodes candidates for matching again.
+
+           A match's generation is the maximum over its top-level enode, the enodes it traverses,
+           and its bindings. So when an enode's generation drops, a cheaper match may exist with
+           that enode or one of its ancestors at the top level. Ancestors are reached through the
+           parents of the equivalence class, because matching works modulo equalities. The search
+           stops at labels that do not occur in a pattern and at the depth of the deepest pattern.
+
+           Repeating a match at an unchanged generation is harmless: its fingerprint already exists.
+        */
+        void generations_lowered_eh(ptr_vector<enode> const & lowered) override {
+            obj_hashtable<enode> visited;
+            ptr_vector<enode> curr, next;
+            for (enode * n : lowered) {
+                if (!visited.contains(n)) {
+                    visited.insert(n);
+                    curr.push_back(n);
+                }
+            }
+            for (unsigned depth = 0; depth < m_max_pattern_depth && !curr.empty(); ++depth) {
+                next.reset();
+                for (enode * n : curr) {
+                    if (n->get_num_args() > 0) {
+                        // Only congruence roots are executed, see interpreter::execute.
+                        enode * cgr = m_context.get_cg_root(n);
+                        if (m_context.is_relevant(cgr))
+                            add_candidate(cgr);
+                    }
+                    for (enode * p : n->get_root()->get_parents()) {
+                        if (!visited.contains(p) && occurs_in_pattern(p->get_decl())) {
+                            visited.insert(p);
+                            next.push_back(p);
+                        }
+                    }
+                }
+                curr.swap(next);
             }
         }
 

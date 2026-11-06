@@ -52,7 +52,9 @@ namespace smt {
         virtual bool has_work() const = 0;
 
         virtual void relevant_eh(enode * n, bool lazy) = 0;
-        
+
+        virtual void generations_lowered_eh(ptr_vector<enode> const & lowered) = 0;
+
         virtual void add_eq_eh(enode * r1, enode * r2) = 0;
 
         virtual void reset() = 0;

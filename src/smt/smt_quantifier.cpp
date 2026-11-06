@@ -361,6 +361,10 @@ namespace smt {
             m_plugin->relevant_eh(n);
         }
 
+        void generations_lowered_eh(ptr_vector<enode> const & lowered) {
+            m_plugin->generations_lowered_eh(lowered);
+        }
+
         void restart_eh() {
             m_plugin->restart_eh();
         }
@@ -517,6 +521,10 @@ namespace smt {
 
     void quantifier_manager::relevant_eh(enode * n) {
         m_imp->relevant_eh(n);
+    }
+
+    void quantifier_manager::generations_lowered_eh(ptr_vector<enode> const & lowered) {
+        m_imp->generations_lowered_eh(lowered);
     }
 
     final_check_status quantifier_manager::final_check_eh(bool full) {
@@ -872,6 +880,11 @@ namespace smt {
                 m_mam->relevant_eh(e, false);
                 m_lazy_mam->relevant_eh(e, true);
             }
+        }
+
+        void generations_lowered_eh(ptr_vector<enode> const & lowered) override {
+            if (use_ematching())
+                m_mam->generations_lowered_eh(lowered);
         }
 
         bool can_propagate() const override {

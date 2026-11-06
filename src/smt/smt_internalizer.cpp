@@ -111,6 +111,57 @@ namespace smt {
                 set_generation_sticky(e, m_generation);
             else
                 set_generation(e, m_generation);
+            if (m_record_lowered_generations) {
+                m_lowered_generations.push_back(e);
+                if (m_scope_lvl > 0)
+                    m_scoped_lowered_generations.push_back({e, m_scope_lvl});
+            }
+        }
+    }
+
+    /**
+       \brief Collect the enodes whose generation dropped above new_lvl and that survive the
+       pop to new_lvl. An enode that survives keeps its lowered generation, but the matches that
+       the drop triggered are undone, and nothing would trigger them again.
+
+       An enode exists when its generation drops, so it cannot be deleted before its entry is removed.
+    */
+    void context::pop_scoped_lowered_generations(unsigned new_lvl, ptr_vector<enode> & surviving) {
+        while (!m_scoped_lowered_generations.empty() && m_scoped_lowered_generations.back().second > new_lvl) {
+            enode * e = m_scoped_lowered_generations.back().first;
+            m_scoped_lowered_generations.pop_back();
+            if (e->get_iscope_lvl() <= new_lvl)
+                surviving.push_back(e);
+        }
+    }
+
+    /**
+       \brief Look for the matches lost by popping the scopes in which the given enodes were lowered.
+       The enodes are recorded again at the current level, since those matches can be undone again.
+    */
+    void context::rematch_lowered_generations(ptr_vector<enode> const & surviving) {
+        if (surviving.empty())
+            return;
+        m_qmanager->generations_lowered_eh(surviving);
+        if (m_scope_lvl > 0)
+            for (enode * e : surviving)
+                m_scoped_lowered_generations.push_back({e, m_scope_lvl});
+    }
+
+    /**
+       \brief Internalize a quantifier instance and propagate its generation to its subterms.
+       If that lowers the generation of existing enodes, cheaper matches may now exist, so
+       the quantifier manager is told to look for them.
+    */
+    void context::internalize_instance_with_generation(expr * body, proof * pr, unsigned generation) {
+        m_lowered_generations.reset();
+        m_record_lowered_generations = true;
+        internalize_assertion(body, pr, generation);
+        update_generation_rec(body, generation);
+        m_record_lowered_generations = false;
+        if (!m_lowered_generations.empty()) {
+            m_qmanager->generations_lowered_eh(m_lowered_generations);
+            m_lowered_generations.reset();
         }
     }
 

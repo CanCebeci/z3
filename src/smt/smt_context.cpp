@@ -2520,6 +2520,7 @@ namespace smt {
     */
     unsigned context::pop_scope_core(unsigned num_scopes) {
         unsigned units_to_reassert_lim = 0;
+        ptr_vector<enode> lowered_generations;
 
         try {
             if (m.has_trace_stream() && !m_is_auxiliary)
@@ -2532,6 +2533,9 @@ namespace smt {
             SASSERT(m_scopes.size() == m_scope_lvl);
 
             unsigned new_lvl = m_scope_lvl - num_scopes;
+
+            // Must run before enodes are deleted: it reads the enodes of the scopes being popped.
+            pop_scoped_lowered_generations(new_lvl, lowered_generations);
 
             cache_generation(new_lvl);
             m_qmanager->pop(num_scopes);
@@ -2602,6 +2606,7 @@ namespace smt {
         // any variable >= num_bool_vars was deleted during backtracking.
         reinit_clauses(num_scopes, num_bool_vars);
         reassert_units(units_to_reassert_lim);
+        rematch_lowered_generations(lowered_generations);
         TRACE(pop_scope_detail, tout << "end of pop_scope: \n"; display(tout););
         CASSERT("context", check_invariant());
         return num_bool_vars;
