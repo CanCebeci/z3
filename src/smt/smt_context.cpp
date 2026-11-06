@@ -1107,13 +1107,27 @@ namespace smt {
         SASSERT(e2->uses_cg_table());
         // optimization opportunity: we actually just need to look at updates above the current decision level.
         // Then we wouldn't have to check for minimum either.
-        for (auto const& [t, generation] : m_sticky_generation_updates) {            
-            if (generation < e1_generation && congruent(t, e1)) {
-                set_generation(e1, generation);
-            } else if (generation < e2_generation && congruent(t, e2)) {
-                set_generation(e2, generation);
+
+        if (congruent(e1, e2)) {
+            // This may happen if e1 is an enode that is about to be deleted. Because the equality that made them
+            // congruent at e1's internalization has not been undone yet.
+            for (auto const& [t, generation] : m_sticky_generation_updates) {
+                if (generation < e2_generation && congruent(t, e1)) {
+                    set_generation(e2, generation);
+                    e2_generation = generation;
+                }
             }
-        }  
+        } else {
+            for (auto const& [t, generation] : m_sticky_generation_updates) {            
+                if (generation < e1_generation && congruent(t, e1)) {
+                    set_generation(e1, generation);
+                    e1_generation = generation;
+                } else if (generation < e2_generation && congruent(t, e2)) {
+                    set_generation(e2, generation);
+                    e2_generation = generation;
+                }
+            }     
+        }
     }
 
     /**
