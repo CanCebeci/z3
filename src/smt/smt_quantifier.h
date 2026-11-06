@@ -70,6 +70,7 @@ namespace smt {
         void assign_eh(quantifier * q);
         void add_eq_eh(enode * n1, enode * n2);
         void relevant_eh(enode * n);
+        void generations_lowered_eh(ptr_vector<enode> const & lowered);
         final_check_status final_check_eh(bool full);
         void restart_eh();
 
@@ -131,6 +132,10 @@ namespace smt {
            \brief This method is invoked whenever n is marked as relevant.
         */
         virtual void relevant_eh(enode * n) = 0;
+        /**
+           \brief This method is invoked when quantifier instantiation lowers the generation of the given enodes.
+        */
+        virtual void generations_lowered_eh(ptr_vector<enode> const & lowered) = 0;
         /**
            \brief This method is invoked when a new search() is started.
         */

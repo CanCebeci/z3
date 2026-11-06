@@ -163,6 +163,9 @@ namespace smt {
         enode_vector                m_empty_vector;
         cg_table                    m_cg_table;
         enode_generation_table      m_sticky_generation_updates;
+        ptr_vector<enode>           m_lowered_generations; // temporary field: enodes whose generation dropped while internalizing an instance
+        bool                        m_record_lowered_generations = false;
+        vector<std::pair<enode*, unsigned>> m_scoped_lowered_generations; // (enode, scope level of the drop), ordered by level. Lowered generations outlive their scope, but the matches they triggered do not.
         vector<std::pair<enode*, unsigned>>      m_r1_parent_generations; // temporary field used to cache generations between remove_parents_from_cg_table and reinsert_parents_into_cg_table
         struct new_eq {
             enode *                 m_lhs;
@@ -1799,13 +1802,18 @@ namespace smt {
 
         void internalize_assertion(expr * n, proof * pr, unsigned generation);
 
+        void internalize_instance_with_generation(expr * body, proof * pr, unsigned generation);
+
+        void pop_scoped_lowered_generations(unsigned new_lvl, ptr_vector<enode> & surviving);
+
+        void rematch_lowered_generations(ptr_vector<enode> const & surviving);
+
         void internalize_proxies(expr_ref_vector const& asms, vector<std::pair<expr*,expr_ref>>& asm2proxy);
 
         void internalize_instance(expr * body, proof * pr, unsigned generation) {
             if (inconsistent())
                 return;
-            internalize_assertion(body, pr, generation);
-            update_generation_rec(body, generation);
+            internalize_instance_with_generation(body, pr, generation);
             if (relevancy()) {
                 // if the instantiation creates a conflict, we backtrack immediately.
                 // to retain the conflict clause being relevant we mark it here.
