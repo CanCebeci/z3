@@ -173,29 +173,44 @@ namespace smt {
        So a quantifier instance is walked once after it has been internalized.
 
        The walk follows expression arguments, not enode arguments, because enodes may
-       suppress their arguments. It continues through subterms that have no enode, and it
-       cannot stop at a subterm whose generation is already low: a generation is shared by
-       a congruence class, so a low generation says nothing about the subterm's own arguments.
+       suppress their arguments. It continues through subterms that have no enode.
+
+       The walk stops at an enode whose m_subterm_generation_ub is at most the given generation,
+       since nothing below it can drop. It cannot stop based on the enode's generation:
+       a generation is shared by a congruence class, so a low generation says nothing about
+       the enode's own arguments.
+
+       A subterm's generation may be low only because of a congruence merge, and undoing the
+       merge can raise it again. The merge happened before the walk, so a trail entry for the
+       bound is undone first, and the bound never outlives the merge it depends on.
     */
     void context::update_generation_rec(expr * e, unsigned generation) {
         if (generation == 0)
             return; // update_generation ignores generation 0.
-        if (!is_app(e))
-            return;
         flet<unsigned> l(m_generation, generation);
-        update_generation(e);
-        if (to_app(e)->get_num_args() == 0)
-            return;
-        obj_hashtable<expr> visited;
+        obj_hashtable<expr> visited; // only for subterms with no enode, which have no bound to stop at.
         ptr_buffer<expr> todo;
-        todo.append(to_app(e)->get_num_args(), to_app(e)->get_args());
+        todo.push_back(e);
         while (!todo.empty()) {
             expr * curr = todo.back();
             todo.pop_back();
-            if (!is_app(curr) || visited.contains(curr))
+            if (!is_app(curr))
                 continue;
-            visited.insert(curr);
-            update_generation(curr);
+            if (e_internalized(curr)) {
+                enode * n = get_enode(curr);
+                SASSERT(n->is_eq() || m_fparams.m_case_split_strategy == CS_RELEVANCY_GOAL ||
+                        get_generation(n) <= n->m_subterm_generation_ub);
+                if (generation >= n->m_subterm_generation_ub) {
+                    continue;
+                }
+                update_generation(n);
+                push_trail(value_trail<unsigned>(n->m_subterm_generation_ub));
+                n->m_subterm_generation_ub = generation;
+            }
+            else if (visited.contains(curr))
+                continue;
+            else
+                visited.insert(curr);
             todo.append(to_app(curr)->get_num_args(), to_app(curr)->get_args());
         }
     }
@@ -1169,6 +1184,14 @@ namespace smt {
         }
         enode *e = enode::mk(m, get_region(), m_app2enode, n, generation, suppress_args, merge_tf, m_scope_lvl,
                              cgc_enabled, true);
+        // A generation 0 term over generation 0 terms can never drop, so walks can always stop here.
+        // An enode with suppressed arguments says nothing about those arguments, so it does not qualify.
+        if (generation == 0 && (!is_app(n) || e->get_num_args() == to_app(n)->get_num_args())) {
+            e->m_subterm_generation_ub = 0;
+            for (enode * arg : e->get_const_args())
+                if (arg->m_subterm_generation_ub != 0)
+                    e->m_subterm_generation_ub = UINT_MAX;
+        }
         TRACE(mk_enode_detail, tout << "e.get_num_args() = " << e->get_num_args() << "\n";);
         if (m.is_unique_value(n))
             e->mark_as_interpreted();
