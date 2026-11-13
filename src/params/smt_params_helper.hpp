@@ -232,7 +232,8 @@ Abstract:
   UINT_  (lemma_gc_strategy,                       "lemma_gc_strategy",                       0,                        "lemma garbage collection strategy: 0 - fixed, 1 - geometric, 2 - at restart, 3 - none") \
   UINT_  (dt_lazy_splits,                          "dt_lazy_splits",                          1,                        "How lazy datatype splits are performed: 0- eager, 1- lazy for infinite types, 2- lazy") \
   BOOL_  (qsat_use_qel,                            "qsat_use_qel",                            true,                     "Use QEL for lite quantifier elimination and model-based projection in QSAT") \
-  BOOL_  (planner_trace,                           "planner_trace",                           false,                    "print decisions and quantifier instances to stderr in the standard solver tracing format")
+  BOOL_  (planner_trace,                           "planner_trace",                           false,                    "print decisions and quantifier instances to stderr in the standard solver tracing format") \
+  BOOL_  (reduce_assertions,                       "reduce_assertions",                       true,                     "Enable reduction of asserted formulas before internalization")
 
 Z3_DEFINE_MODULE_PARAMS(smt_params_helper, "smt", SMT_PARAMS_HELPER_LIST, "smt solver based on lazy smt");
 
