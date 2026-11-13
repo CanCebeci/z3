@@ -60,6 +60,7 @@ void smt_params::updt_local_params(params_ref const & _p) {
     m_string_solver = p.string_solver();
     m_up_persist_clauses = p.up_persist_clauses();
     m_planner_trace = p.planner_trace();
+    m_planner_replay = p.planner_replay();
     validate_string_solver(m_string_solver);
     if (_p.get_bool("arith.greatest_error_pivot", false))
         m_arith_pivot_strategy = arith_pivot_strategy::ARITH_PIVOT_GREATEST_ERROR;
@@ -139,6 +140,7 @@ void smt_params::display(std::ostream & out) const {
     DISPLAY_PARAM(m_reduce_assertions);
 
     DISPLAY_PARAM(m_case_split_strategy);
+    DISPLAY_PARAM(m_planner_replay);
     DISPLAY_PARAM(m_case_split_relevant_first);
     DISPLAY_PARAM(m_rel_case_split_order);
     DISPLAY_PARAM(m_lookahead_diseq);

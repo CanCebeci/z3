@@ -24,6 +24,11 @@ Revision History:
 #include "ast/ast_pp.h"
 #include "util/map.h"
 #include "util/hashtable.h"
+#include "util/z3_exception.h"
+#include "ast/planner_trace.h"
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
 
 using namespace smt;
 
@@ -1270,6 +1275,284 @@ namespace {
 
         }
     };
+
+    /**
+       \brief Replay the decisions of a planner trace (smt.case_split=7, smt.planner_replay=<file>).
+
+       Only `[decide] <lit>; level=<n> ...` and `[backtrack] <n>; level=<from> -> <to>` lines
+       are read (plus Sundance's `; decide level=<n> ...` comments for decisions on unobserved
+       variables, which cannot be replayed). Every decision Z3 makes is the trace's next
+       `[decide]`; every backtrack Z3 makes during search must be the trace's next `[backtrack]`.
+       Any divergence raises an error.
+
+       Levels are compared relative to the search level, so that they count decisions only
+       (scopes below it hold user pushes and assumptions).
+
+       Errors found while popping (where throwing is unsafe) are raised at the next decision
+       or at the end of the search.
+    */
+    class planner_replay_queue : public act_case_split_queue {
+        enum event_kind { DECIDE, BACKTRACK };
+        struct event {
+            event_kind  m_kind;
+            unsigned    m_line;
+            std::string m_term;         // DECIDE: the decided atom, empty if the trace has none
+            bool        m_sign = false; // DECIDE: the atom is decided false, `(not <atom>)`
+            unsigned    m_level = 0;    // DECIDE: level after the decision; BACKTRACK: level before
+            unsigned    m_num_scopes = 0; // BACKTRACK
+            unsigned    m_new_level = 0;  // BACKTRACK
+            std::string m_text;         // the line, for error messages
+        };
+
+        std::string    m_file;
+        bool           m_loaded = false;
+        vector<event>  m_events;
+        unsigned       m_pos = 0;
+        std::string    m_pending_error; // first divergence found while popping
+
+        // printed atom of each Boolean variable, refreshed when the variable's expression changes
+        // (the expressions are pinned so that a freed one cannot be mistaken for a new one)
+        expr_ref_vector                          m_printed_expr;
+        vector<std::string>                      m_printed;
+        std::unordered_map<std::string, bool_var> m_index;
+
+        // The exception stops the search; the solver reports `unknown` with msg as reason.
+        // It is also printed, as the reason is easily missed.
+        [[noreturn]] void fail(std::string const & msg) {
+            std::cerr << "planner replay error: " << msg << std::endl;
+            throw default_exception("planner replay: " + msg);
+        }
+
+        std::string at(event const & e) const {
+            return m_file + ":" + std::to_string(e.m_line) + ": `" + e.m_text + "`";
+        }
+
+        static bool parse_uint(std::string const & s, size_t & i, unsigned & r) {
+            size_t j = i;
+            r = 0;
+            while (j < s.size() && '0' <= s[j] && s[j] <= '9')
+                r = 10 * r + (s[j++] - '0');
+            if (j == i)
+                return false;
+            i = j;
+            return true;
+        }
+
+        static bool skip(std::string const & s, size_t & i, char const * lit) {
+            std::string l(lit);
+            if (s.compare(i, l.size(), l) != 0)
+                return false;
+            i += l.size();
+            return true;
+        }
+
+        void load() {
+            m_loaded = true;
+            if (m_file.empty())
+                fail("smt.case_split=7 requires smt.planner_replay=<planner trace file>");
+            std::ifstream in(m_file);
+            if (!in)
+                fail("cannot open " + m_file);
+            std::string line;
+            unsigned lineno = 0;
+            while (std::getline(in, line)) {
+                ++lineno;
+                if (!line.empty() && line.back() == '\r')
+                    line.pop_back();
+                event e;
+                e.m_line = lineno;
+                e.m_text = line;
+                size_t i = 0;
+                if (skip(line, i, "[decide] ")) {
+                    // `[decide] <lit>; level=<n> <solver literal>`; terms contain no `; level=`
+                    size_t semi = line.rfind("; level=");
+                    if (semi == std::string::npos || semi < i)
+                        fail(at(e) + ": malformed decision");
+                    std::string term = line.substr(i, semi - i);
+                    size_t j = semi + 8;
+                    if (!parse_uint(line, j, e.m_level))
+                        fail(at(e) + ": malformed decision level");
+                    // `not` is never a Boolean variable in Z3, so `(not t)` is the negative literal of t
+                    if (term.size() > 6 && term.compare(0, 5, "(not ") == 0 && term.back() == ')') {
+                        e.m_sign = true;
+                        term = term.substr(5, term.size() - 6);
+                    }
+                    e.m_kind = DECIDE;
+                    e.m_term = term;
+                }
+                else if (skip(line, i, "; decide level=")) {
+                    // a decision without a term (on a variable the trace does not observe)
+                    if (!parse_uint(line, i, e.m_level))
+                        fail(at(e) + ": malformed decision level");
+                    e.m_kind = DECIDE;
+                }
+                else if (skip(line, i, "[backtrack] ")) {
+                    unsigned from = 0;
+                    if (!parse_uint(line, i, e.m_num_scopes) || !skip(line, i, "; level=") ||
+                        !parse_uint(line, i, from) || !skip(line, i, " -> ") ||
+                        !parse_uint(line, i, e.m_new_level))
+                        fail(at(e) + ": malformed backtrack");
+                    e.m_kind = BACKTRACK;
+                    e.m_level = from;
+                }
+                else
+                    continue;
+                m_events.push_back(e);
+            }
+            IF_VERBOSE(1, verbose_stream() << "(smt.planner-replay :file " << m_file
+                       << " :events " << m_events.size() << ")\n";);
+        }
+
+        bool active() const {
+            return !m_context.is_auxiliary();
+        }
+
+        unsigned decision_level() const {
+            return m_context.get_scope_level() - m_context.get_search_level();
+        }
+
+        void raise_pending_error() {
+            if (!m_pending_error.empty()) {
+                std::string msg = m_pending_error;
+                m_pending_error.clear();
+                fail(msg);
+            }
+        }
+
+        std::string const & printed(bool_var v) {
+            expr * e = m_context.bool_var2expr(v);
+            if (v >= m_printed.size()) {
+                m_printed.resize(v + 1);
+                m_printed_expr.resize(v + 1);
+            }
+            if (m_printed_expr.get(v) != e) {
+                m_printed_expr[v] = e;
+                std::ostringstream out;
+                if (e)
+                    planner_trace_printer(out).display(e);
+                m_printed[v] = out.str();
+                if (e)
+                    m_index[m_printed[v]] = v;
+            }
+            return m_printed[v];
+        }
+
+        std::string describe(bool_var v) {
+            return "`" + printed(v) + "`";
+        }
+
+        // The Boolean variable whose atom prints as `term`; an unassigned one if there are several.
+        bool_var find_var(std::string const & term) {
+            unsigned n = m_context.get_num_bool_vars();
+            for (bool_var v = 0; v < n; ++v)
+                printed(v);
+            auto it = m_index.find(term);
+            if (it != m_index.end() && it->second < n && printed(it->second) == term &&
+                m_context.get_assignment(it->second) == l_undef)
+                return it->second;
+            bool_var found = null_bool_var;
+            for (bool_var v = 0; v < n; ++v) {
+                if (printed(v) != term)
+                    continue;
+                if (m_context.get_assignment(v) == l_undef)
+                    return v;
+                found = v;
+            }
+            return found;
+        }
+
+    public:
+        planner_replay_queue(context & ctx, smt_params & p):
+            act_case_split_queue(ctx, p),
+            m_file(p.m_planner_replay),
+            m_printed_expr(ctx.get_manager()) {
+        }
+
+        void init_search_eh() override {
+            act_case_split_queue::init_search_eh();
+            if (active() && !m_loaded)
+                load();
+        }
+
+        void end_search_eh() override {
+            act_case_split_queue::end_search_eh();
+            if (!active())
+                return;
+            raise_pending_error();
+            // The trace may undo its last decisions once it is done; Z3 does so lazily.
+            while (m_pos < m_events.size() && m_events[m_pos].m_kind == BACKTRACK)
+                ++m_pos;
+            if (m_pos < m_events.size())
+                fail(at(m_events[m_pos]) + ": Z3 ended its search (at decision level " +
+                     std::to_string(decision_level()) + ") but the trace decides next");
+        }
+
+        void pop_scope(unsigned num_scopes) override {
+            act_case_split_queue::pop_scope(num_scopes);
+            if (!active() || !m_context.is_searching() || !m_pending_error.empty())
+                return;
+            // only decision levels are replayed: ignore pops of assumption and user scopes
+            unsigned lvl = m_context.get_scope_level();
+            unsigned search_lvl = m_context.get_search_level();
+            if (lvl <= search_lvl)
+                return;
+            unsigned new_lvl = num_scopes >= lvl - search_lvl ? 0 : lvl - search_lvl - num_scopes;
+            unsigned from = lvl - search_lvl;
+            unsigned n = from - new_lvl;
+            std::string z3 = "Z3 backtracks " + std::to_string(n) + " (level " + std::to_string(from) +
+                " -> " + std::to_string(new_lvl) + ")";
+            if (m_pos == m_events.size()) {
+                m_pending_error = z3 + " but the trace has no more events";
+                return;
+            }
+            event const & e = m_events[m_pos];
+            if (e.m_kind != BACKTRACK) {
+                m_pending_error = at(e) + ": " + z3 + " but the trace decides";
+                return;
+            }
+            if (e.m_num_scopes != n || e.m_level != from || e.m_new_level != new_lvl) {
+                m_pending_error = at(e) + ": " + z3 + " but the trace backtracks differently";
+                return;
+            }
+            ++m_pos;
+        }
+
+        void next_case_split(bool_var & next, lbool & phase) override {
+            if (!active()) {
+                act_case_split_queue::next_case_split(next, phase);
+                return;
+            }
+            raise_pending_error();
+            unsigned lvl = decision_level() + 1; // level after this decision
+            if (m_pos == m_events.size()) {
+                act_case_split_queue::next_case_split(next, phase);
+                if (next != null_bool_var)
+                    fail("the trace has no more events, but Z3 needs a decision at level " +
+                         std::to_string(lvl) + " (e.g. on " + describe(next) + ")");
+                return;
+            }
+            event const & e = m_events[m_pos];
+            if (e.m_kind == BACKTRACK)
+                fail(at(e) + ": Z3 needs a decision at level " + std::to_string(lvl) +
+                     " but the trace backtracks (Z3 found no conflict)");
+            if (e.m_level != lvl)
+                fail(at(e) + ": Z3 decides at level " + std::to_string(lvl) +
+                     " but the trace decides at level " + std::to_string(e.m_level));
+            if (e.m_term.empty())
+                fail(at(e) + ": the trace decides a variable without a term, which cannot be replayed");
+            bool_var v = find_var(e.m_term);
+            if (v == null_bool_var)
+                fail(at(e) + ": Z3 has no Boolean variable for the decided atom");
+            lbool val = m_context.get_assignment(v);
+            if (val != l_undef)
+                fail(at(e) + ": the decided atom is already assigned " +
+                     std::string(val == l_true ? "true" : "false") + " in Z3 (at level " +
+                     std::to_string(m_context.get_assign_level(v)) + ")");
+            next = v;
+            phase = e.m_sign ? l_false : l_true;
+            ++m_pos;
+        }
+    };
 }
 
 namespace smt {
@@ -1297,6 +1580,8 @@ namespace smt {
             return alloc(rel_goal_case_split_queue, ctx, p);
         case CS_ACTIVITY_THEORY_AWARE_BRANCHING:
             return alloc(theory_aware_branching_queue, ctx, p);
+        case CS_PLANNER_REPLAY:
+            return alloc(planner_replay_queue, ctx, p);
         default:
             return alloc(act_case_split_queue, ctx, p);
         }

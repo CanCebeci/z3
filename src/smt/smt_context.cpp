@@ -2009,7 +2009,10 @@ namespace smt {
     */
     bool context::decide() {
 
-        if (at_search_level() && !m_tmp_clauses.empty()) {
+        // When replaying a planner trace, every decision is the trace's next one
+        bool replay = planner_replay();
+
+        if (!replay && at_search_level() && !m_tmp_clauses.empty()) {
             switch (decide_clause()) {
             case l_true:  // already satisfied
                 break;
@@ -2023,7 +2026,7 @@ namespace smt {
         bool is_pos;
         bool used_queue = false;
         
-        if (!has_split_candidate(var, is_pos)) {
+        if (replay || !has_split_candidate(var, is_pos)) {
             lbool phase = l_undef;
             m_case_split_queue->next_case_split(var, phase);
             used_queue = true;
@@ -2043,7 +2046,8 @@ namespace smt {
                           tout << "\n";);
                 }});
         
-            is_pos = guess(var, phase);
+            // the trace's phase is replayed as is, even for quantifiers
+            is_pos = replay ? phase == l_true : guess(var, phase);
         }
 
         m_stats.m_num_decisions++;
@@ -2057,7 +2061,7 @@ namespace smt {
 
         bool_var original_choice = var;
 
-        if (decide_user_interference(var, is_pos)) {
+        if (!replay && decide_user_interference(var, is_pos)) {
             if (used_queue)
                 m_case_split_queue->unassign_var_eh(original_choice);
             l = literal(var, false);

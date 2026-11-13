@@ -308,6 +308,15 @@ namespace smt {
             return m_fparams.m_planner_trace && !m_is_auxiliary;
         }
 
+        bool is_auxiliary() const {
+            return m_is_auxiliary;
+        }
+
+        // smt.case_split=7: decisions come from a planner trace only
+        bool planner_replay() const {
+            return m_fparams.m_case_split_strategy == CS_PLANNER_REPLAY && !m_is_auxiliary;
+        }
+
         // Point the rewriters' [eq] events at the trace, or turn them off
         void update_planner_trace();
 
