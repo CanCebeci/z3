@@ -1276,6 +1276,8 @@ namespace smt {
 
         void planner_trace_decision(literal l);
 
+        void planner_trace_backtrack(unsigned num_scopes);
+
         void planner_trace_merge(enode * n1, enode * n2, eq_justification const & js);
 
         void update_phase_cache_counter();

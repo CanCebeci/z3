@@ -2087,6 +2087,16 @@ namespace smt {
             out << ")";
         out << "; level=" << m_scope_lvl << " " << l << "\n";
     }
+
+    /**
+       \brief With smt.planner_trace, print `[backtrack] <n>`: popping n scopes
+       undoes the last n decisions (each decision opens one scope).
+    */
+    void context::planner_trace_backtrack(unsigned num_scopes) {
+        if (planner_trace())
+            std::cerr << "[backtrack] " << num_scopes << "; level=" << m_scope_lvl
+                      << " -> " << m_scope_lvl - num_scopes << "\n";
+    }
     
     /**
        \brief With smt.planner_trace, print an e-graph merge as `[eq] <lhs> <rhs>`.
@@ -2621,6 +2631,7 @@ namespace smt {
             SASSERT(m_scopes.size() == m_scope_lvl);
 
             unsigned new_lvl = m_scope_lvl - num_scopes;
+            planner_trace_backtrack(num_scopes);
 
             cache_generation(new_lvl);
             m_qmanager->pop(num_scopes);
