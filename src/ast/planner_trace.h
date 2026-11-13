@@ -19,6 +19,7 @@ Abstract:
 
 #include "ast/ast.h"
 #include <ostream>
+#include <string>
 
 class planner_trace_printer {
     std::ostream & m_out;
@@ -36,7 +37,8 @@ public:
 
 // `[eq] <lhs> <rhs>`: the two closed terms are equal (equivalent, for Bool).
 // Terms with free variables are skipped, as are repeats of the previous pair.
-void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs);
+// A non-empty `comment` is appended as `; <comment>`.
+void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs, std::string const & comment = "");
 
 // `[eq] <fml> true`: a formula the solver now holds as true, e.g. a definition
 // introduced by preprocessing.

@@ -186,7 +186,7 @@ static bool is_closed(expr * e) {
     return is_quantifier(e) && !has_free_vars(e);
 }
 
-void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs) {
+void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs, std::string const & comment) {
     // A rewrite is often reported twice in a row: by the rewriter for the root
     // term, then by the caller for the whole formula.
     static unsigned s_last_lhs = UINT_MAX, s_last_rhs = UINT_MAX;
@@ -203,7 +203,10 @@ void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs) {
     planner_trace_printer(r).display(rhs);
     if (l.str() == r.str())
         return;
-    out << "[eq] " << l.str() << " " << r.str() << "\n";
+    out << "[eq] " << l.str() << " " << r.str();
+    if (!comment.empty())
+        out << "; " << comment;
+    out << "\n";
 }
 
 void planner_trace_fact(ast_manager & m, std::ostream & out, expr * fml) {

@@ -527,6 +527,8 @@ namespace smt {
                 return;
             }
 
+            planner_trace_merge(n1, n2, js);
+
             // Swap r1 and r2:
             //  1. if the "equivalence" class of r1 is bigger than the equivalence class of r2
             //  OR
@@ -2086,6 +2088,28 @@ namespace smt {
         out << "; level=" << m_scope_lvl << " " << l << "\n";
     }
     
+    /**
+       \brief With smt.planner_trace, print an e-graph merge as `[eq] <lhs> <rhs>`.
+
+       Skipped: merges by congruence (implied by earlier [eq] events) and merges
+       of a Boolean term with true/false (literal assignments, not equalities).
+       Like decisions, merges are undone on backtracking without an event.
+    */
+    void context::planner_trace_merge(enode * n1, enode * n2, eq_justification const & js) {
+        if (!planner_trace() || js.get_kind() == eq_justification::CONGRUENCE)
+            return;
+        for (enode * n : {n1, n2})
+            if (n == m_true_enode || n == m_false_enode)
+                return;
+        char const * reason = "axiom";
+        if (js.get_kind() == eq_justification::EQUATION)
+            reason = "literal";
+        else if (js.get_kind() == eq_justification::JUSTIFICATION)
+            reason = "theory";
+        planner_trace_eq(std::cerr, n1->get_expr(), n2->get_expr(),
+                         "merge level=" + std::to_string(m_scope_lvl) + " " + reason);
+    }
+
     /**
        \brief Update counter that is used to enable/disable phase caching.
     */
