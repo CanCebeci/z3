@@ -1310,9 +1310,9 @@ namespace {
         unsigned       m_pos = 0;
         std::string    m_pending_error; // first divergence found while popping
 
-        // printed atom of each Boolean variable, refreshed when the variable's expression changes
-        // (the expressions are pinned so that a freed one cannot be mistaken for a new one)
-        expr_ref_vector                          m_printed_expr;
+        // printed atom of each Boolean variable, invalidated when the variable is created or
+        // deleted (expressions are not pinned: keeping them alive would change Z3's AST ids)
+        bool_vector                              m_printed_valid;
         vector<std::string>                      m_printed;
         std::unordered_map<std::string, bool_var> m_index;
 
@@ -1423,10 +1423,10 @@ namespace {
             expr * e = m_context.bool_var2expr(v);
             if (v >= m_printed.size()) {
                 m_printed.resize(v + 1);
-                m_printed_expr.resize(v + 1);
+                m_printed_valid.resize(v + 1, false);
             }
-            if (m_printed_expr.get(v) != e) {
-                m_printed_expr[v] = e;
+            if (!m_printed_valid[v]) {
+                m_printed_valid[v] = true;
                 std::ostringstream out;
                 if (e)
                     planner_trace_printer(out).display(e);
@@ -1435,6 +1435,11 @@ namespace {
                     m_index[m_printed[v]] = v;
             }
             return m_printed[v];
+        }
+
+        void invalidate(bool_var v) {
+            if (v < m_printed_valid.size())
+                m_printed_valid[v] = false;
         }
 
         std::string describe(bool_var v) {
@@ -1461,11 +1466,253 @@ namespace {
             return found;
         }
 
+        // ------------------------------------------------------------------
+        // Matching modulo the e-graph: a trace term matches a Boolean variable
+        // whose atom Z3 knows to be equivalent to it.
+        // ------------------------------------------------------------------
+
+        // a parsed trace term
+        struct sterm {
+            std::string        m_text;     // as written
+            std::vector<sterm> m_args;     // empty for a token; else m_args[0] is the head
+            bool is_token() const { return m_args.empty(); }
+        };
+
+        static bool parse_sterm(std::string const & s, size_t & i, sterm & t) {
+            while (i < s.size() && s[i] == ' ')
+                ++i;
+            if (i >= s.size() || s[i] == ')')
+                return false;
+            size_t start = i;
+            if (s[i] == '(') {
+                ++i;
+                while (true) {
+                    while (i < s.size() && s[i] == ' ')
+                        ++i;
+                    if (i >= s.size())
+                        return false;
+                    if (s[i] == ')') {
+                        ++i;
+                        break;
+                    }
+                    t.m_args.push_back(sterm());
+                    if (!parse_sterm(s, i, t.m_args.back()))
+                        return false;
+                }
+                if (t.m_args.empty())
+                    return false;
+            }
+            else if (s[i] == '|') {
+                size_t j = s.find('|', i + 1);
+                if (j == std::string::npos)
+                    return false;
+                i = j + 1;
+            }
+            else if (s[i] == '"') {
+                ++i;
+                while (true) {  // `""` escapes a quote
+                    size_t j = s.find('"', i);
+                    if (j == std::string::npos)
+                        return false;
+                    i = j + 1;
+                    if (i < s.size() && s[i] == '"')
+                        ++i;
+                    else
+                        break;
+                }
+            }
+            else {
+                while (i < s.size() && s[i] != ' ' && s[i] != '(' && s[i] != ')')
+                    ++i;
+            }
+            t.m_text = s.substr(start, i - start);
+            return true;
+        }
+
+        // The e-graph, indexed by how its terms print; rebuilt for each lookup, since
+        // terms come and go on backtracking.
+        std::unordered_map<std::string, ptr_vector<enode>> m_leaf_index; // constant -> its enodes
+        std::unordered_map<std::string, ptr_vector<app>>   m_app_index;  // head/arity -> applications
+        std::unordered_map<func_decl *, std::string>       m_head_cache;
+
+        static std::string app_key(std::string const & head, unsigned arity) {
+            return head + "/" + std::to_string(arity);
+        }
+
+        std::string const & head_of(func_decl * d) {
+            auto it = m_head_cache.find(d);
+            if (it != m_head_cache.end())
+                return it->second;
+            std::ostringstream out;
+            planner_trace_printer(out).display_head(d);
+            return m_head_cache[d] = out.str();
+        }
+
+        void index_app(app * a) {
+            m_app_index[app_key(head_of(a->get_decl()), a->get_num_args())].push_back(a);
+        }
+
+        void build_index() {
+            m_leaf_index.clear();
+            m_app_index.clear();
+            m_head_cache.clear();
+            for (enode * n : m_context.enodes()) {
+                expr * e = n->get_expr();
+                if (!is_app(e))
+                    continue;
+                app * a = to_app(e);
+                if (a->get_num_args() == 0) {
+                    std::ostringstream out;
+                    planner_trace_printer(out).display(a);
+                    m_leaf_index[out.str()].push_back(n);
+                }
+                else
+                    index_app(a);
+            }
+            // atoms that are Boolean variables only, e.g. arithmetic atoms
+            unsigned nv = m_context.get_num_bool_vars();
+            for (bool_var v = 0; v < nv; ++v) {
+                expr * e = m_context.bool_var2expr(v);
+                if (e && is_app(e) && to_app(e)->get_num_args() > 0 && !m_context.e_internalized(e))
+                    index_app(to_app(e));
+            }
+        }
+
+        static void insert_root(ptr_vector<enode> & roots, enode * r) {
+            if (!roots.contains(r))
+                roots.push_back(r);
+        }
+
+        static bool is_binder(std::string const & head) {
+            return head == "forall" || head == "exists" || head == "lambda" || head == "let" || head == "!";
+        }
+
+        std::unordered_map<sterm const *, ptr_vector<enode>> m_roots; // memo for resolve
+
+        // e is equivalent to t: e's class is one of t's, or e has t's head and arguments
+        // equivalent to t's (for terms without enodes, e.g. numerals in arithmetic atoms)
+        bool matches(expr * e, sterm const & t) {
+            if (m_context.e_internalized(e) && resolve(t).contains(m_context.get_enode(e)->get_root()))
+                return true;
+            if (!is_app(e))
+                return false;
+            app * a = to_app(e);
+            if (a->get_num_args() == 0) {
+                std::ostringstream out;
+                planner_trace_printer(out).display(a);
+                return out.str() == t.m_text;
+            }
+            return !t.is_token() && head_of(a->get_decl()) == t.m_args[0].m_text &&
+                   a->get_num_args() + 1 == t.m_args.size() && args_match(a, t);
+        }
+
+        // a's arguments are equivalent to t's (in either order, if a is commutative)
+        bool args_match(app * a, sterm const & t) {
+            unsigned n = a->get_num_args();
+            bool match = true;
+            for (unsigned i = 0; match && i < n; ++i)
+                match = matches(a->get_arg(i), t.m_args[i + 1]);
+            if (!match && n == 2 && a->get_decl()->is_commutative())
+                match = matches(a->get_arg(0), t.m_args[2]) && matches(a->get_arg(1), t.m_args[1]);
+            return match;
+        }
+
+        // the terms with t's head whose arguments are equivalent to t's
+        void congruent_apps(sterm const & t, ptr_vector<app> & apps) {
+            if (t.is_token() || is_binder(t.m_args[0].m_text))
+                return;
+            auto it = m_app_index.find(app_key(t.m_args[0].m_text, t.m_args.size() - 1));
+            if (it == m_app_index.end())
+                return;
+            for (app * a : it->second)
+                if (args_match(a, t))
+                    apps.push_back(a);
+        }
+
+        // the roots of the classes of the e-graph terms equivalent to t
+        ptr_vector<enode> const & resolve(sterm const & t) {
+            auto memo = m_roots.find(&t);
+            if (memo != m_roots.end())
+                return memo->second;
+            m_roots[&t]; // nothing is equivalent while t is being resolved
+            ptr_vector<enode> roots;
+            // constants, including numerals that print as applications, e.g. `(- 1)`
+            auto it = m_leaf_index.find(t.m_text);
+            if (it != m_leaf_index.end())
+                for (enode * n : it->second)
+                    insert_root(roots, n->get_root());
+            ptr_vector<app> apps;
+            congruent_apps(t, apps);
+            for (app * a : apps)
+                if (m_context.e_internalized(a))
+                    insert_root(roots, m_context.get_enode(a)->get_root());
+            return m_roots[&t] = roots;
+        }
+
+        void add_class_vars(enode * root, bool_var_vector & vars) {
+            enode * n = root;
+            do {
+                expr * e = n->get_expr();
+                if (m_context.b_internalized(e) && m_context.get_bool_var(e) != true_bool_var)
+                    vars.push_back(m_context.get_bool_var(e));
+                n = n->get_next();
+            } while (n != root);
+        }
+
+        // Boolean variables whose atoms are equivalent to `term` in the current e-graph
+        void equivalent_vars(std::string const & term, bool_var_vector & vars) {
+            sterm t;
+            size_t i = 0;
+            if (!parse_sterm(term, i, t) || i != term.size())
+                return;
+            build_index();
+            m_roots.clear();
+            for (enode * r : resolve(t))
+                add_class_vars(r, vars);
+            // atoms without enodes
+            ptr_vector<app> apps;
+            congruent_apps(t, apps);
+            for (app * a : apps)
+                if (!m_context.e_internalized(a) && m_context.b_internalized(a))
+                    vars.push_back(m_context.get_bool_var(a));
+            m_roots.clear();
+        }
+
+        // The Boolean variable to decide for `term`: one whose atom prints as `term`, else one
+        // whose atom is equivalent to it; an unassigned one if possible.
+        bool_var find_equivalent_var(std::string const & term, bool & exact) {
+            exact = true;
+            bool_var v = find_var(term);
+            if (v != null_bool_var && m_context.get_assignment(v) == l_undef)
+                return v;
+            bool_var_vector vars;
+            equivalent_vars(term, vars);
+            for (bool_var w : vars) {
+                if (m_context.get_assignment(w) == l_undef) {
+                    exact = false;
+                    return w;
+                }
+            }
+            if (v != null_bool_var)
+                return v;
+            exact = vars.empty();
+            return vars.empty() ? null_bool_var : vars[0];
+        }
+
     public:
         planner_replay_queue(context & ctx, smt_params & p):
             act_case_split_queue(ctx, p),
-            m_file(p.m_planner_replay),
-            m_printed_expr(ctx.get_manager()) {
+            m_file(p.m_planner_replay) {
+        }
+
+        void mk_var_eh(bool_var v) override {
+            act_case_split_queue::mk_var_eh(v);
+            invalidate(v);
+        }
+
+        void del_var_eh(bool_var v) override {
+            act_case_split_queue::del_var_eh(v);
+            invalidate(v);
         }
 
         void init_search_eh() override {
@@ -1540,14 +1787,18 @@ namespace {
                      " but the trace decides at level " + std::to_string(e.m_level));
             if (e.m_term.empty())
                 fail(at(e) + ": the trace decides a variable without a term, which cannot be replayed");
-            bool_var v = find_var(e.m_term);
+            bool exact;
+            bool_var v = find_equivalent_var(e.m_term, exact);
             if (v == null_bool_var)
-                fail(at(e) + ": Z3 has no Boolean variable for the decided atom");
+                fail(at(e) + ": Z3 has no Boolean variable for the decided atom or one equivalent to it");
             lbool val = m_context.get_assignment(v);
             if (val != l_undef)
-                fail(at(e) + ": the decided atom is already assigned " +
-                     std::string(val == l_true ? "true" : "false") + " in Z3 (at level " +
-                     std::to_string(m_context.get_assign_level(v)) + ")");
+                fail(at(e) + ": the decided atom" + (exact ? "" : std::string(", equivalent to ") + describe(v) + ",") +
+                     " is already assigned " + std::string(val == l_true ? "true" : "false") +
+                     " in Z3 (at level " + std::to_string(m_context.get_assign_level(v)) + ")");
+            if (!exact)
+                IF_VERBOSE(2, verbose_stream() << "(smt.planner-replay :line " << e.m_line
+                           << " :equivalent " << printed(v) << ")\n";);
             next = v;
             phase = e.m_sign ? l_false : l_true;
             ++m_pos;

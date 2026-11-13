@@ -14,6 +14,7 @@ Abstract:
 #include "ast/has_free_vars.h"
 #include "ast/arith_decl_plugin.h"
 #include "ast/bv_decl_plugin.h"
+#include "ast/datatype_decl_plugin.h"
 #include "util/smt2_util.h"
 #include <sstream>
 
@@ -81,15 +82,46 @@ void planner_trace_printer::display_app(app * t) {
         m_out << "(_ bv" << d->get_parameter(0).get_rational() << " " << d->get_parameter(1).get_int() << ")";
         return;
     }
+    unsigned num_args = t->get_num_args();
+    if (num_args > 0)
+        m_out << "(";
+    display_head(d);
+    for (expr * arg : *t) {
+        m_out << " ";
+        display(arg);
+    }
+    if (num_args > 0)
+        m_out << ")";
+}
+
+// A datatype recognizer, `is-C` or `(_ is C)` internally: its first parameter is the
+// constructor C, and it belongs to the family of the datatype it tests. (The printer
+// has no ast_manager to look up the datatype family id.)
+static func_decl * recognized_constructor(func_decl * d) {
+    if ((d->get_decl_kind() != OP_DT_RECOGNISER && d->get_decl_kind() != OP_DT_IS) ||
+        d->get_arity() != 1 || d->get_family_id() == null_family_id ||
+        d->get_domain(0)->get_family_id() != d->get_family_id() ||
+        d->get_num_parameters() == 0 || !d->get_parameter(0).is_ast() ||
+        !is_func_decl(d->get_parameter(0).get_ast()))
+        return nullptr;
+    func_decl * c = to_func_decl(d->get_parameter(0).get_ast());
+    return c->get_range() == d->get_domain(0) ? c : nullptr;
+}
+
+void planner_trace_printer::display_head(func_decl * d) {
+    // recognizers print in standard form, `(_ is C)`
+    if (func_decl * c = recognized_constructor(d)) {
+        m_out << "(_ is ";
+        display_symbol(c->get_name());
+        m_out << ")";
+        return;
+    }
     // Integer parameters make an indexed identifier, e.g. (_ extract 7 0);
     // other parameters (e.g. datatype bookkeeping) are not part of the name.
     unsigned np = d->get_num_parameters();
     bool indexed = np > 0;
     for (unsigned i = 0; i < np; ++i)
         indexed &= d->get_parameter(i).is_int();
-    unsigned num_args = t->get_num_args();
-    if (num_args > 0)
-        m_out << "(";
     if (indexed) {
         m_out << "(_ ";
         display_symbol(d->get_name());
@@ -99,12 +131,6 @@ void planner_trace_printer::display_app(app * t) {
     }
     else
         display_symbol(d->get_name());
-    for (expr * arg : *t) {
-        m_out << " ";
-        display(arg);
-    }
-    if (num_args > 0)
-        m_out << ")";
 }
 
 void planner_trace_printer::display_quantifier(quantifier * q) {

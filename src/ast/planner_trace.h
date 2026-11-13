@@ -33,6 +33,8 @@ class planner_trace_printer {
 public:
     planner_trace_printer(std::ostream & out): m_out(out) {}
     void display(expr * e);
+    // the head of an application of d with arguments, e.g. `f` or `(_ extract 7 0)`
+    void display_head(func_decl * d);
 };
 
 // `[eq] <lhs> <rhs>`: the two closed terms are equal (equivalent, for Bool).
