@@ -1659,6 +1659,52 @@ namespace {
             } while (n != root);
         }
 
+        // The innermost subterm of t that has no equivalent in the e-graph: t itself if
+        // all its arguments do (or t is a token that does not).
+        sterm const * find_missing(sterm const & t) {
+            if (!resolve(t).empty())
+                return nullptr;
+            for (unsigned i = 1; i < t.m_args.size(); ++i)
+                if (sterm const * m = find_missing(t.m_args[i]))
+                    return m;
+            return &t;
+        }
+
+        static std::string abbrev(std::string const & s) {
+            return s.size() <= 300 ? s : s.substr(0, 300) + "...";
+        }
+
+        // Why no Boolean variable is equivalent to `term`
+        std::string diagnose(std::string const & term) {
+            sterm t;
+            size_t i = 0;
+            if (!parse_sterm(term, i, t) || i != term.size())
+                return "cannot parse the atom";
+            build_index();
+            m_roots.clear();
+            std::string r;
+            sterm const * missing = find_missing(t);
+            if (missing && missing != &t)
+                r = "Z3 has no term equivalent to the subterm `" + abbrev(missing->m_text) + "`";
+            else if (t.is_token() || is_binder(t.m_args[0].m_text))
+                r = "Z3 has no such atom";
+            else {
+                r = "Z3 has terms equivalent to all arguments of the atom, but no atom with head `" +
+                    t.m_args[0].m_text + "` over them";
+                if (t.m_args[0].m_text == "=" && t.m_args.size() == 3) {
+                    ptr_vector<enode> const & lhs = resolve(t.m_args[1]);
+                    ptr_vector<enode> const & rhs = resolve(t.m_args[2]);
+                    bool same = false;
+                    for (enode * x : lhs)
+                        same |= rhs.contains(x);
+                    r += same ? "; the two sides are in the same class (Z3 knows they are equal)"
+                              : "; the two sides are in different classes";
+                }
+            }
+            m_roots.clear();
+            return r;
+        }
+
         // Boolean variables whose atoms are equivalent to `term` in the current e-graph
         void equivalent_vars(std::string const & term, bool_var_vector & vars) {
             sterm t;
@@ -1790,7 +1836,8 @@ namespace {
             bool exact;
             bool_var v = find_equivalent_var(e.m_term, exact);
             if (v == null_bool_var)
-                fail(at(e) + ": Z3 has no Boolean variable for the decided atom or one equivalent to it");
+                fail(at(e) + ": Z3 has no Boolean variable for the decided atom or one equivalent to it: " +
+                     diagnose(e.m_term));
             lbool val = m_context.get_assignment(v);
             if (val != l_undef)
                 fail(at(e) + ": the decided atom" + (exact ? "" : std::string(", equivalent to ") + describe(v) + ",") +
