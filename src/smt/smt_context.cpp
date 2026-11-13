@@ -19,6 +19,7 @@ Revision History:
 #include<math.h>
 #include "util/luby.h"
 #include "util/warning.h"
+#include "params/tactic_params.hpp"
 #include "util/timeit.h"
 #include "util/union_find.h"
 #include "ast/ast_pp.h"
@@ -134,6 +135,14 @@ namespace smt {
         std::ostream * out = planner_trace() ? &std::cerr : nullptr;
         m_rewriter.set_eq_trace(out);
         m_asserted_formulas.set_planner_trace(out);
+        // Traces are meant to be produced in this configuration; in particular,
+        // [eq] events do not cover rewrites made by the tactic pipeline.
+        static bool s_warned = false;
+        if (out && !s_warned &&
+            (tactic_params().default_tactic() != "smt" || m_fparams.m_reduce_assertions)) {
+            s_warned = true;
+            warning_msg("smt.planner_trace=true expects tactic.default_tactic=smt and smt.reduce_assertions=false");
+        }
     }
 
     void context::copy(context& src_ctx, context& dst_ctx, bool override_base) {
