@@ -15,6 +15,7 @@ Abstract:
 #include "ast/arith_decl_plugin.h"
 #include "ast/bv_decl_plugin.h"
 #include "util/smt2_util.h"
+#include <sstream>
 
 void planner_trace_printer::display_symbol(symbol const & s) {
     // numerical symbols print as k!<n> and need no quoting
@@ -195,12 +196,14 @@ void planner_trace_eq(std::ostream & out, expr * lhs, expr * rhs) {
         return;
     s_last_lhs = lhs->get_id();
     s_last_rhs = rhs->get_id();
-    planner_trace_printer pp(out);
-    out << "[eq] ";
-    pp.display(lhs);
-    out << " ";
-    pp.display(rhs);
-    out << "\n";
+    // Distinct terms can print alike, e.g. the numeral -128 and the application
+    // (- 128) it is folded from; such an equality says nothing in SMT-LIB.
+    std::ostringstream l, r;
+    planner_trace_printer(l).display(lhs);
+    planner_trace_printer(r).display(rhs);
+    if (l.str() == r.str())
+        return;
+    out << "[eq] " << l.str() << " " << r.str() << "\n";
 }
 
 void planner_trace_fact(ast_manager & m, std::ostream & out, expr * fml) {
