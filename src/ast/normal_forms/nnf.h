@@ -43,6 +43,9 @@ public:
 
     void reset();
     void reset_cache();
+
+    // smt.planner_trace: report the NNF of positive-polarity subformulas as [eq] events
+    void set_eq_trace(std::ostream * out);
 };
 
 Z3_REGISTER_MODULE_PARAMS(nnf, "nnf", nnf::get_param_descrs, nullptr);

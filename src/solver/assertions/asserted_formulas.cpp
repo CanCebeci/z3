@@ -16,6 +16,7 @@ Author:
 Revision History:
 
 --*/
+#include "ast/planner_trace.h"
 #include "util/warning.h"
 #include "ast/ast_ll_pp.h"
 #include "ast/ast_pp.h"
@@ -330,9 +331,43 @@ unsigned asserted_formulas::get_formulas_last_level() const {
     }
 }
 
+void asserted_formulas::set_planner_trace(std::ostream * out) {
+    m_planner_trace = out;
+    m_rewriter.set_eq_trace(out);
+    simplify_fmls * passes[] = {
+        &m_reduce_asserted_formulas, &m_distribute_forall, &m_pattern_inference, &m_refine_inj_axiom,
+        &m_max_bv_sharing_fn, &m_elim_term_ite, &m_qe_lite, &m_pull_nested_quantifiers,
+        &m_elim_bvs_from_quantifiers, &m_cheap_quant_fourier_motzkin, &m_apply_bit2int, &m_bv_size_reduce,
+        &m_lift_ite, &m_ng_lift_ite, &m_find_macros, &m_propagate_values, &m_nnf_cnf,
+        &m_apply_quasi_macros, &m_flatten_clauses };
+    for (simplify_fmls * p : passes)
+        p->set_eq_trace(out);
+}
+
+void asserted_formulas::trace_eq(expr * lhs, expr * rhs) {
+    if (m_planner_trace)
+        planner_trace_eq(*m_planner_trace, lhs, rhs);
+}
+
+void asserted_formulas::trace_fact(expr * fml) {
+    if (m_planner_trace)
+        planner_trace_fact(m, *m_planner_trace, fml);
+}
+
 bool asserted_formulas::invoke(simplify_fmls& s) {
     if (!s.should_apply()) return true;
+    // An opaque pass gives no formula-to-formula map: report each formula it
+    // produces as a fact.
+    obj_hashtable<expr> before;
+    bool trace_opaque = m_planner_trace && s.is_opaque();
+    if (trace_opaque)
+        for (unsigned i = m_qhead; i < m_formulas.size(); ++i)
+            before.insert(m_formulas[i].fml());
     s();
+    if (trace_opaque)
+        for (unsigned i = m_qhead; i < m_formulas.size(); ++i)
+            if (!before.contains(m_formulas[i].fml()))
+                trace_fact(m_formulas[i].fml());
     IF_VERBOSE(10, verbose_stream() << "(smt." << s.id() << " :num-exprs " << get_total_size() << ")\n";);
     IF_VERBOSE(10000, verbose_stream() << "total size: " << get_total_size() << "\n";);
     TRACE(reduce_step_ll, ast_mark visited; display_ll(tout, visited););
@@ -485,6 +520,7 @@ void asserted_formulas::apply_quasi_macros() {
 
 void asserted_formulas::nnf_cnf() {
     nnf              apply_nnf(m, m_defined_names);
+    apply_nnf.set_eq_trace(m_planner_trace);
     vector<justified_expr> new_fmls;
     expr_ref_vector  push_todo(m);
     proof_ref_vector push_todo_prs(m);
@@ -503,6 +539,7 @@ void asserted_formulas::nnf_cnf() {
         CASSERT("well_sorted", is_well_sorted(m, n));
         apply_nnf(n, push_todo, push_todo_prs, r1, pr1);
         CASSERT("well_sorted",is_well_sorted(m, r1));
+        trace_eq(n, r1); // holds given NNF's naming definitions, traced below
         pr = m.proofs_enabled() ? m.mk_modus_ponens(pr, pr1) : nullptr;
         push_todo.push_back(r1);
         push_todo_prs.push_back(pr);
@@ -521,6 +558,8 @@ void asserted_formulas::nnf_cnf() {
             }
             if (m.proofs_enabled())
                 pr = m.mk_modus_ponens(push_todo_prs.get(k), pr1);
+            if (k + 1 < sz2) // a naming definition introduced by NNF (the NNF of n comes last)
+                trace_fact(r1);
             push_assertion(r1, pr, new_fmls);
         }
     }
@@ -535,6 +574,7 @@ void asserted_formulas::simplify_fmls::operator()() {
         expr_ref result(m);
         proof_ref result_pr(m);
         simplify(j, result, result_pr);
+        af.trace_eq(j.fml(), result);
         SASSERT(is_well_sorted(m, j.fml()));
         if (m.proofs_enabled()) {
             if (!result_pr) result_pr = m.mk_rewrite(j.fml(), result);
@@ -625,6 +665,7 @@ unsigned asserted_formulas::propagate_values(unsigned i) {
         new_pr = m.mk_modus_ponens(pr, new_pr);
     }
     justified_expr j(m, new_n, new_pr);
+    trace_eq(n, new_n);
     if (n != new_n)
         m_reduce_pending = true;
     m_formulas[i] = j;

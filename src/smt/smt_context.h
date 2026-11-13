@@ -308,6 +308,9 @@ namespace smt {
             return m_fparams.m_planner_trace && !m_is_auxiliary;
         }
 
+        // Point the rewriters' [eq] events at the trace, or turn them off
+        void update_planner_trace();
+
         params_ref const & get_params() {
             return m_params;
         }

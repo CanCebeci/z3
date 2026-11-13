@@ -107,6 +107,7 @@ bool rewriter_tpl<Config>::process_const(app * t0) {
         m_r = t;
         Z3_fallthrough;      
     case BR_DONE:
+        trace_eq(t0, m_r);
         result_stack().push_back(m_r.get());
         if (ProofGen) {
             SASSERT(rewrites_from(t0, m_pr));
@@ -147,6 +148,7 @@ bool rewriter_tpl<Config>::visit(expr * t, unsigned max_depth) {
     if (m_cfg.get_subst(t, new_t, new_t_pr)) {
         TRACE(rewriter_subst, tout << "subst\n" << mk_ismt2_pp(t, m()) << "\n---->\n" << mk_ismt2_pp(new_t, m()) << "\n";);
         SASSERT(t->get_sort() == new_t->get_sort());
+        trace_eq(t, new_t);
         result_stack().push_back(new_t);
         set_new_child_flag(t, new_t);
         SASSERT(rewrites_from(t, new_t_pr));
@@ -206,6 +208,7 @@ bool rewriter_tpl<Config>::visit(expr * t, unsigned max_depth) {
                 rw(m_r, result, m_pr);
                 m_r = result;
             }
+            trace_eq(t, m_r);
             set_new_child_flag(t, m_r);
             result_stack().push_back(m_r);
             return true;

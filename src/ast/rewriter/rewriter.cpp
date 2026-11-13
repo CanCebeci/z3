@@ -22,6 +22,7 @@ Notes:
 #include "ast/ast_ll_pp.h"
 #include "ast/ast_pp.h"
 #include "ast/ast_smt2_pp.h"
+#include "ast/planner_trace.h"
 
 void rewriter_core::init_cache_stack() {
     SASSERT(m_cache_stack.empty());
@@ -166,6 +167,10 @@ bool rewriter_core::is_child_of_top_frame(expr * t) const {
     default:
         return false;
     }
+}
+
+void rewriter_core::trace_eq_core(expr * t, expr * r) {
+    planner_trace_eq(*m_eq_trace, t, r);
 }
 
 /**

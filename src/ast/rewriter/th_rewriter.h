@@ -30,6 +30,7 @@ class th_rewriter {
     struct     imp;
     imp *      m_imp;
     params_ref m_params;
+    std::ostream * m_eq_trace = nullptr;
 public:
     th_rewriter(ast_manager & m, params_ref const & p = params_ref());
     ~th_rewriter();
@@ -40,6 +41,8 @@ public:
     static void get_param_descrs(param_descrs & r);
 
     void set_flat_and_or(bool f);
+    // smt.planner_trace: report every rewrite of a closed term as an [eq] event
+    void set_eq_trace(std::ostream * out);
     void set_order_eq(bool f);
 
     unsigned get_cache_size() const;

@@ -1115,6 +1115,12 @@ void th_rewriter::cleanup() {
     ast_manager & m = m_imp->m();
     m_imp->~imp();
     new (m_imp) imp(m, m_params);
+    m_imp->set_eq_trace(m_eq_trace);
+}
+
+void th_rewriter::set_eq_trace(std::ostream * out) {
+    m_eq_trace = out;
+    m_imp->set_eq_trace(out);
 }
 
 void th_rewriter::reset() {

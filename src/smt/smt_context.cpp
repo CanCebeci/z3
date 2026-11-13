@@ -43,7 +43,7 @@ Revision History:
 #include "smt/smt_model_checker.h"
 #include "smt/smt_model_finder.h"
 #include "smt/smt_parallel.h"
-#include "smt/smt_planner_trace.h"
+#include "ast/planner_trace.h"
 #include "smt/smt_arith_value.h"
 #include <iostream>
 
@@ -89,6 +89,7 @@ namespace smt {
 
         m_case_split_queue = mk_case_split_queue(*this, p);
         m_rewriter.updt_params(m_asserted_formulas.get_params());
+        update_planner_trace();
 
         init();
 
@@ -126,6 +127,13 @@ namespace smt {
         for (auto th : m_theory_set)
             if (th)
                 th->updt_params();
+        update_planner_trace();
+    }
+
+    void context::update_planner_trace() {
+        std::ostream * out = planner_trace() ? &std::cerr : nullptr;
+        m_rewriter.set_eq_trace(out);
+        m_asserted_formulas.set_planner_trace(out);
     }
 
     void context::copy(context& src_ctx, context& dst_ctx, bool override_base) {
@@ -223,6 +231,7 @@ namespace smt {
     context * context::mk_fresh(symbol const * l, smt_params * p, params_ref const& pa) {
         context * new_ctx = alloc(context, m, p ? *p : m_fparams, pa);
         new_ctx->m_is_auxiliary = true;
+        new_ctx->update_planner_trace();
         new_ctx->set_logic(l == nullptr ? m_setup.get_logic() : *l);
         copy_plugins(*this, *new_ctx);
         new_ctx->copy_user_propagator(*this, false);
@@ -2058,7 +2067,7 @@ namespace smt {
         if (!planner_trace())
             return;
         std::ostream & out = std::cerr;
-        planner_trace_printer pp(m, out);
+        planner_trace_printer pp(out);
         out << "[decide] ";
         if (l.sign())
             out << "(not ";

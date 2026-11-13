@@ -49,6 +49,7 @@ protected:
     ast_manager &              m_manager;
     bool                       m_proof_gen; 
     bool                       m_cancel_check;
+    std::ostream *             m_eq_trace = nullptr; // smt.planner_trace: report rewrites as [eq] events
     typedef act_cache          cache;
     ptr_vector<cache>          m_cache_stack;
     cache *                    m_cache; // current cache.
@@ -114,6 +115,8 @@ protected:
     void set_new_child_flag(expr * old_t, expr * new_t) { if (old_t != new_t) set_new_child_flag(old_t); }
     
     void elim_reflex_prs(unsigned spos);
+    void trace_eq_core(expr * t, expr * r);
+    void trace_eq(expr * t, expr * r) { if (m_eq_trace && t != r) trace_eq_core(t, r); }
     void block(expr* t) { m_blocked.insert(t); }
     bool is_blocked(expr* t) const { return m_blocked.contains(t); }
 public:
@@ -123,6 +126,7 @@ public:
     void reset();
     void cleanup();
     void set_cancel_check(bool f) { m_cancel_check = f; }
+    void set_eq_trace(std::ostream * out) { m_eq_trace = out; }
 #ifdef _TRACE
     void display_stack(std::ostream & out, unsigned pp_depth);
 #endif
@@ -312,6 +316,8 @@ protected:
 
     template<bool ProofGen>
     void cache_result(expr * t, expr * new_t, proof * pr, bool c) {
+        // called whenever a frame for t completes, so every rewrite passes here
+        this->trace_eq(t, new_t);
         if (c) {
             if (!ProofGen)
                 rewriter_core::cache_result(t, new_t);

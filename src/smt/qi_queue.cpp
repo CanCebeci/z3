@@ -20,7 +20,7 @@ Revision History:
 #include "util/stats.h"
 #include "ast/ast_pp.h"
 #include "ast/ast_ll_pp.h"
-#include "smt/smt_planner_trace.h"
+#include "ast/planner_trace.h"
 #include "ast/rewriter/var_subst.h"
 #include "smt/smt_context.h"
 #include "smt/qi_queue.h"
@@ -239,6 +239,8 @@ namespace smt {
         expr_ref  s_instance(m);
         proof_ref pr(m);
         m_context.get_rewriter()(instance, s_instance, pr);
+        if (m_context.planner_trace())
+            planner_trace_eq(std::cerr, instance, s_instance);
 
         TRACE(qi_queue_bug, tout << "new instance after simplification:\n" << s_instance << "\n";);
         if (m.is_true(s_instance)) {
@@ -275,7 +277,7 @@ namespace smt {
         if (m_context.planner_trace()) {
             // `[qi] <quantifier> <binding>*`; bindings are in declaration order
             std::ostream & out = std::cerr;
-            planner_trace_printer pp(m, out);
+            planner_trace_printer pp(out);
             out << "[qi] ";
             pp.display(q);
             for (unsigned i = 0; i < num_bindings; ++i) {

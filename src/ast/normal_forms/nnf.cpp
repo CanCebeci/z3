@@ -29,6 +29,7 @@ Notes:
 #include "ast/normal_forms/name_exprs.h"
 #include "ast/ast_smt2_pp.h"
 #include "ast/ast_pp.h"
+#include "ast/planner_trace.h"
 #include <array>
 
 /**
@@ -210,6 +211,7 @@ typedef default_exception nnf_params_exception;
 typedef default_exception nnf_exception;
 
 struct nnf::imp {
+    std::ostream * m_eq_trace = nullptr;
 
     struct frame {
         expr_ref  m_curr;
@@ -895,6 +897,10 @@ struct nnf::imp {
             }
 
             if (status) {
+                // Under negative polarity the result is the NNF of (not t), which
+                // cannot be stated without creating a node.
+                if (m_eq_trace && fr.m_pol)
+                    planner_trace_eq(*m_eq_trace, fr.m_curr, m_result_stack.back());
                 if (fr.m_cache_result)
                     cache_result(fr.m_curr, fr.m_pol, fr.m_in_q, m_result_stack.back(), proofs_enabled() ? m_result_pr_stack.back() : nullptr);
                 m_frame_stack.pop_back();
@@ -949,6 +955,10 @@ void nnf::get_param_descrs(param_descrs & r) {
 
 void nnf::reset() {
     m_imp->reset();
+}
+
+void nnf::set_eq_trace(std::ostream * out) {
+    m_imp->m_eq_trace = out;
 }
 
 void nnf::reset_cache() {

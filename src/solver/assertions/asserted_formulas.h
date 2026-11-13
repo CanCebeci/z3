@@ -39,6 +39,15 @@ Revision History:
 #include "ast/pattern/pattern_inference.h"
 #include "params/smt_params.h"
 #include "qe/lite/qe_lite_tactic.h"
+#include "util/obj_hashtable.h"
+
+// smt.planner_trace: enable [eq] events on a simplifier's functor if it is a rewriter
+template<typename T>
+auto planner_trace_set_eq_trace(T & f, std::ostream * out, int) -> decltype(f.set_eq_trace(out), void()) {
+    f.set_eq_trace(out);
+}
+template<typename T>
+void planner_trace_set_eq_trace(T &, std::ostream *, long) {}
 
 
 class asserted_formulas {
@@ -79,6 +88,10 @@ class asserted_formulas {
         virtual bool should_apply() const { return true;}
         virtual void post_op() {}
         virtual void operator()();
+        // smt.planner_trace: report the rewrites this pass makes as [eq] events
+        virtual void set_eq_trace(std::ostream * out) {}
+        // the pass rewrites the formula set as a whole (no formula-to-formula map)
+        virtual bool is_opaque() const { return false; }
     };
 
     class reduce_asserted_formulas_fn : public simplify_fmls {
@@ -99,6 +112,7 @@ class asserted_formulas {
     public:
         find_macros_fn(asserted_formulas& af): simplify_fmls(af, "find-macros") {}
         void operator()() override { af.m_reduce_pending = true; af.find_macros_core(); }
+        bool is_opaque() const override { return true; }
         bool should_apply() const override { return (af.m_smt_params.m_quasi_macros || af.m_smt_params.m_macro_finder) && af.has_quantifiers(); }
         void simplify(justified_expr const& j, expr_ref& n, proof_ref& p) override { UNREACHABLE(); }
     };
@@ -107,6 +121,7 @@ class asserted_formulas {
     public:
         apply_quasi_macros_fn(asserted_formulas& af): simplify_fmls(af, "find-quasi-macros") {}
         void operator()() override { af.m_reduce_pending = true; af.apply_quasi_macros(); }
+        bool is_opaque() const override { return true; }
         bool should_apply() const override { return af.m_smt_params.m_quasi_macros && af.has_quantifiers(); }
         void simplify(justified_expr const& j, expr_ref& n, proof_ref& p) override { UNREACHABLE(); }
     };
@@ -141,6 +156,7 @@ class asserted_formulas {
     public:
         pattern_inference_fn(asserted_formulas& af): simplify_fmls(af, "pattern-inference"), m_infer(af.m, af.m_smt_params) {}
         void simplify(justified_expr const& j, expr_ref& n, proof_ref& p) override { m_infer(j.fml(), n, p); }
+        void set_eq_trace(std::ostream * out) override { m_infer.set_eq_trace(out); }
         bool should_apply() const override { return af.m_smt_params.m_ematching && af.has_quantifiers(); }
     };
 
@@ -175,7 +191,13 @@ class asserted_formulas {
         elim_term_ite_fn(asserted_formulas& af): simplify_fmls(af, "elim-term-ite"), m_elim(af.m, af.m_defined_names) {}
         void simplify(justified_expr const& j, expr_ref& n, proof_ref& p) override { m_elim(j.fml(), n, p); }
         bool should_apply() const override { return af.m_smt_params.m_eliminate_term_ite && af.m_smt_params.m_lift_ite != lift_ite_kind::LI_FULL; }
-        void post_op() override { if (!m_elim.new_defs().empty()) af.m_reduce_pending = true; af.m_formulas.append(m_elim.new_defs()); af.reduce_and_solve(); m_elim.reset(); }
+        void post_op() override {
+            if (!m_elim.new_defs().empty()) af.m_reduce_pending = true;
+            for (justified_expr const & d : m_elim.new_defs())
+                af.trace_fact(d.fml());
+            af.m_formulas.append(m_elim.new_defs()); af.reduce_and_solve(); m_elim.reset();
+        }
+        void set_eq_trace(std::ostream * out) override { m_elim.set_eq_trace(out); }
         void push() { m_elim.push(); }
         void pop(unsigned n) { m_elim.pop(n); }
     };
@@ -184,6 +206,7 @@ class asserted_formulas {
     public:
         flatten_clauses_fn(asserted_formulas& af): simplify_fmls(af, "flatten-clauses") {}
         void operator()() override { af.m_reduce_pending = true; af.flatten_clauses(); }
+        bool is_opaque() const override { return true; }
         bool should_apply() const override { return true; }
         void simplify(justified_expr const& j, expr_ref& n, proof_ref& p) override { UNREACHABLE(); }
     };
@@ -199,6 +222,7 @@ class asserted_formulas {
         }                                                               \
         void post_op() override { if (REDUCE) af.reduce_and_solve(); }	\
         bool should_apply() const override { return APP; }		\
+        void set_eq_trace(std::ostream * out) override { planner_trace_set_eq_trace(m_functor, out, 0); } \
     }
 
 #define MK_SIMPLIFIERF(NAME, FUNCTOR, MSG, APP, REDUCE) MK_SIMPLIFIERA(NAME, FUNCTOR, MSG, APP, (af.m), REDUCE)
@@ -238,6 +262,10 @@ class asserted_formulas {
     void push_scope_core();
 
     bool invoke(simplify_fmls& s);
+
+    std::ostream *              m_planner_trace = nullptr;
+    void trace_eq(expr * lhs, expr * rhs);
+    void trace_fact(expr * fml);
     void swap_asserted_formulas(vector<justified_expr>& new_fmls);
     void push_assertion(expr * e, proof * pr, vector<justified_expr>& result);
     bool canceled() { return !m.inc(); }
@@ -260,6 +288,8 @@ class asserted_formulas {
     void init(unsigned num_formulas, expr * const * formulas, proof * const * prs);
 
 public:
+    // smt.planner_trace: report preprocessing rewrites as [eq] events to out (nullptr: off)
+    void set_planner_trace(std::ostream * out);
     asserted_formulas(ast_manager & m, smt_params & smtp, params_ref const& p);
     void finalize();
 

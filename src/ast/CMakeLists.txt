@@ -36,6 +36,7 @@ z3_add_component(ast
     fpa_decl_plugin.cpp
     func_decl_dependencies.cpp
     has_free_vars.cpp
+    planner_trace.cpp
     macro_substitution.cpp
     num_occurs.cpp
     occurs.cpp
