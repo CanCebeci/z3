@@ -59,6 +59,7 @@ void smt_params::updt_local_params(params_ref const & _p) {
     m_logic = _p.get_sym("logic", m_logic);
     m_string_solver = p.string_solver();
     m_up_persist_clauses = p.up_persist_clauses();
+    m_planner_trace = p.planner_trace();
     validate_string_solver(m_string_solver);
     if (_p.get_bool("arith.greatest_error_pivot", false))
         m_arith_pivot_strategy = arith_pivot_strategy::ARITH_PIVOT_GREATEST_ERROR;

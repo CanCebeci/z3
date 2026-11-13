@@ -2044,8 +2044,29 @@ namespace smt {
 
         if (!is_pos) l.neg();
         TRACE(decide, tout << "case split " << l << "\n" << "activity: " << get_activity(var) << "\n";);
+        planner_trace_decision(l);
         assign(l, b_justification::mk_axiom(), true);
         return true;
+    }
+
+    /**
+       \brief With smt.planner_trace, print a decision as `[decide] <bool expr>`
+       (standard solver tracing format).
+    */
+    void context::planner_trace_decision(literal l) {
+        if (!m_fparams.m_planner_trace)
+            return;
+        params_ref pp;
+        pp.set_bool("single_line", true);
+        pp.set_uint("max_depth", UINT_MAX);      // no `let` aliases
+        pp.set_uint("min_alias_size", UINT_MAX);
+        std::ostream & out = std::cerr;
+        out << "[decide] ";
+        if (l.sign())
+            out << "(not " << mk_ismt2_pp(bool_var2expr(l.var()), m, pp) << ")";
+        else
+            out << mk_ismt2_pp(bool_var2expr(l.var()), m, pp);
+        out << "; level=" << m_scope_lvl << " " << l << "\n";
     }
     
     /**
@@ -3506,6 +3527,7 @@ namespace smt {
             if (unassigned != null_literal) {
                 shuffle(lits.size(), lits.data(), m_random);
                 push_scope();
+                planner_trace_decision(unassigned);
                 assign(unassigned, b_justification::mk_axiom(), true);
                 return l_undef;
             }

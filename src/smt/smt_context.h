@@ -1266,6 +1266,8 @@ namespace smt {
         bool m_has_case_split = true;
         bool decide();
 
+        void planner_trace_decision(literal l);
+
         void update_phase_cache_counter();
 
 #define ACTIVITY_LIMIT 1e100
