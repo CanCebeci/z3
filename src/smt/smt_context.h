@@ -303,6 +303,11 @@ namespace smt {
             return m_fparams;
         }
 
+        // smt.planner_trace, for the main search only (not e.g. MBQI's auxiliary context)
+        bool planner_trace() const {
+            return m_fparams.m_planner_trace && !m_is_auxiliary;
+        }
+
         params_ref const & get_params() {
             return m_params;
         }

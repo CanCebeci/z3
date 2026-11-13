@@ -43,6 +43,7 @@ Revision History:
 #include "smt/smt_model_checker.h"
 #include "smt/smt_model_finder.h"
 #include "smt/smt_parallel.h"
+#include "smt/smt_planner_trace.h"
 #include "smt/smt_arith_value.h"
 #include <iostream>
 
@@ -2054,18 +2055,16 @@ namespace smt {
        (standard solver tracing format).
     */
     void context::planner_trace_decision(literal l) {
-        if (!m_fparams.m_planner_trace)
+        if (!planner_trace())
             return;
-        params_ref pp;
-        pp.set_bool("single_line", true);
-        pp.set_uint("max_depth", UINT_MAX);      // no `let` aliases
-        pp.set_uint("min_alias_size", UINT_MAX);
         std::ostream & out = std::cerr;
+        planner_trace_printer pp(m, out);
         out << "[decide] ";
         if (l.sign())
-            out << "(not " << mk_ismt2_pp(bool_var2expr(l.var()), m, pp) << ")";
-        else
-            out << mk_ismt2_pp(bool_var2expr(l.var()), m, pp);
+            out << "(not ";
+        pp.display(bool_var2expr(l.var()));
+        if (l.sign())
+            out << ")";
         out << "; level=" << m_scope_lvl << " " << l << "\n";
     }
     

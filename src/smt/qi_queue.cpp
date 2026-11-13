@@ -20,7 +20,7 @@ Revision History:
 #include "util/stats.h"
 #include "ast/ast_pp.h"
 #include "ast/ast_ll_pp.h"
-#include "ast/ast_smt2_pp.h"
+#include "smt/smt_planner_trace.h"
 #include "ast/rewriter/var_subst.h"
 #include "smt/smt_context.h"
 #include "smt/qi_queue.h"
@@ -272,16 +272,16 @@ namespace smt {
             IF_VERBOSE(3, verbose_stream() << "qi_queue: on_binding returned false, skipping instance.\n";);
             return;
         }
-        if (m_context.get_fparams().m_planner_trace) {
+        if (m_context.planner_trace()) {
             // `[qi] <quantifier> <binding>*`; bindings are in declaration order
-            params_ref pp;
-            pp.set_bool("single_line", true);
-            pp.set_uint("max_depth", UINT_MAX);      // no `let` aliases
-            pp.set_uint("min_alias_size", UINT_MAX);
             std::ostream & out = std::cerr;
-            out << "[qi] " << mk_ismt2_pp(q, m, pp);
-            for (unsigned i = 0; i < num_bindings; ++i)
-                out << " " << mk_ismt2_pp(bindings[i]->get_expr(), m, pp);
+            planner_trace_printer pp(m, out);
+            out << "[qi] ";
+            pp.display(q);
+            for (unsigned i = 0; i < num_bindings; ++i) {
+                out << " ";
+                pp.display(bindings[i]->get_expr());
+            }
             out << "; gen=" << generation << " level=" << m_context.get_scope_level() << "\n";
         }
 
