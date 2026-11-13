@@ -1268,7 +1268,8 @@ namespace smt {
         // it is not possible to distinguish between learned and non-learned clauses.
         if (lemma && relevancy_lvl() >= 2)
             return false; 
-        if (m_base_lvl > 0)
+        // Binary lemmas live only in watch lists and are not deleted on user pop.
+        if (m_base_lvl > 0 || !m_base_scopes.empty())
             return false;
         if (!lemma && m_scope_lvl > 0)
             return false;

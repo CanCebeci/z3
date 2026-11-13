@@ -1388,7 +1388,9 @@ namespace smt {
         m_unmark.reset();
 
         SASSERT(m_conflict_lvl <= m_ctx.get_search_level());
-        unsigned search_lvl = m_ctx.get_search_level();
+        // Sundance does not pop to the base level between checks, so scopes in (base_lvl, search_lvl)
+        // can hold literals that depend on tracked literals of earlier checks. Walk down to base_lvl.
+        unsigned base_lvl = m_ctx.get_base_level();
 
         b_justification js  = conflict;
         literal consequent  = false_literal;
@@ -1454,7 +1456,7 @@ namespace smt {
             while (idx >= 0) {
                 literal l = m_assigned_literals[idx];
                 CTRACE(unsat_core_bug, m_ctx.is_marked(l.var()), tout << "l: " << l << ", get_assign_level(l): " << m_ctx.get_assign_level(l) << "\n";);
-                if (m_ctx.get_assign_level(l) < search_lvl)
+                if (m_ctx.get_assign_level(l) <= base_lvl)
                     goto end_unsat_core;
                 if (m_ctx.is_marked(l.var()))
                     break;
@@ -1467,7 +1469,7 @@ namespace smt {
             SASSERT(idx >= 0);
             consequent     = m_assigned_literals[idx];
             bool_var c_var = consequent.var();
-            SASSERT(m_ctx.get_assign_level(c_var) == search_lvl);
+            SASSERT(m_ctx.get_assign_level(c_var) > base_lvl);
             js             = m_ctx.get_justification(c_var);
             idx--;
         }

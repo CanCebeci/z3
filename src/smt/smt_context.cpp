@@ -1889,6 +1889,9 @@ namespace smt {
 
         m_stats.m_num_decisions++;
 
+        exit(1);
+
+
         push_scope();
         TRACE(decide, tout << "splitting, lvl: " << m_scope_lvl << "\n";);
 
@@ -2442,8 +2445,11 @@ namespace smt {
 
             units_to_reassert_lim = s.m_units_to_reassert_lim;
 
-            if (new_lvl < m_base_lvl) {
-                base_scope & bs = m_base_scopes[new_lvl];
+            unsigned num_user_scopes = m_base_scopes.size();
+            while (num_user_scopes > 0 && m_base_scopes[num_user_scopes - 1].m_scope_lvl > new_lvl)
+                --num_user_scopes;
+            if (num_user_scopes < m_base_scopes.size()) {
+                base_scope & bs = m_base_scopes[num_user_scopes];
                 del_clauses(m_lemmas, bs.m_lemmas_lim);
                 m_simp_qhead = bs.m_simp_qhead_lim;
                 if (!bs.m_inconsistent) {
@@ -2451,7 +2457,7 @@ namespace smt {
                     m_not_l = null_literal;
                     m_unsat_proof = nullptr;
                 }
-                m_base_scopes.shrink(new_lvl);
+                m_base_scopes.shrink(num_user_scopes);
             }
             else {
                 m_conflict = null_b_justification;
@@ -2487,6 +2493,8 @@ namespace smt {
                 m_base_lvl = new_lvl;
                 m_search_lvl = new_lvl; // Remark: not really necessary
             }
+            if (m_search_lvl > new_lvl)
+                m_search_lvl = new_lvl;
         }
         catch (...) {
             // throwing inside pop is just not cool.
@@ -2510,12 +2518,11 @@ namespace smt {
     }
 
     void context::pop_to_base_lvl() {
-        SASSERT(m_scope_lvl >= m_base_lvl);
-        if (!at_base_level()) {
-            unsigned num_lvls = m_scope_lvl - m_base_lvl;
-            pop_scope(num_lvls);
-        }
-        SASSERT(m_scope_lvl == m_base_lvl);
+        // Never pop user scopes here; m_base_lvl stays 0, so stop at the most recent user push.
+        unsigned lvl = m_base_scopes.empty() ? m_base_lvl : m_base_scopes.back().m_scope_lvl;
+        SASSERT(m_scope_lvl >= lvl);
+        if (m_scope_lvl > lvl)
+            pop_scope(m_scope_lvl - lvl);
     }
 
     void context::pop_to_search_lvl() {
@@ -2755,7 +2762,7 @@ namespace smt {
     */
     void context::del_inactive_lemmas1() {
         unsigned sz            = m_lemmas.size();
-        unsigned start_at      = m_base_lvl == 0 ? 0 : m_base_scopes[m_base_lvl - 1].m_lemmas_lim;
+        unsigned start_at      = m_base_scopes.empty() ? 0 : m_base_scopes.back().m_lemmas_lim;
         SASSERT(start_at <= sz);
         if (start_at + m_fparams.m_recent_lemmas_size >= sz)
             return;
@@ -2815,7 +2822,7 @@ namespace smt {
     void context::del_inactive_lemmas2() {
         IF_VERBOSE(2, verbose_stream() << "(smt.delete-inactive-clauses "; verbose_stream().flush(););
         unsigned sz            = m_lemmas.size();
-        unsigned start_at      = m_base_lvl == 0 ? 0 : m_base_scopes[m_base_lvl - 1].m_lemmas_lim;
+        unsigned start_at      = m_base_scopes.empty() ? 0 : m_base_scopes.back().m_lemmas_lim;
         SASSERT(start_at <= sz);
         unsigned real_sz       = sz - start_at;
         // idx of the first learned clause considered "new"
@@ -3017,7 +3024,7 @@ namespace smt {
 
 
     void context::internalize_unasserted(expr * e) {
-        pop_to_base_lvl();
+        // pop_to_base_lvl();
         setup_context(false);
         internalize_assertions();
         expr_ref r(m);
@@ -3032,7 +3039,7 @@ namespace smt {
     }
 
     void context::push() {       
-        pop_to_base_lvl();
+        // pop_to_base_lvl();
         setup_context(false);
         bool was_consistent = !inconsistent();
         try {
@@ -3051,19 +3058,22 @@ namespace smt {
         push_scope();
         m_base_scopes.push_back(base_scope());
         base_scope & bs = m_base_scopes.back();
+        bs.m_scope_lvl = m_scope_lvl;
         bs.m_lemmas_lim = m_lemmas.size();
         bs.m_inconsistent = inconsistent();
         bs.m_simp_qhead_lim = m_simp_qhead;
-        m_base_lvl++;
+        // m_base_lvl++;
         m_search_lvl++; // Not really necessary. But, it is useful to enforce the invariant m_search_lvl >= m_base_lvl
         SASSERT(m_base_lvl <= m_scope_lvl);
     }
 
     void context::pop(unsigned num_scopes) {
         SASSERT (num_scopes > 0);
-        if (num_scopes > m_scope_lvl) return;
-        pop_to_base_lvl();
-        pop_scope(num_scopes);
+        if (num_scopes > m_base_scopes.size()) return;
+        // User scopes are not the bottom m_base_lvl levels: assumption scopes of earlier checks can sit
+        // below them. Pop to just below the scope opened by the num_scopes-th most recent user push.
+        unsigned target_lvl = m_base_scopes[m_base_scopes.size() - num_scopes].m_scope_lvl - 1;
+        pop_scope(m_scope_lvl - target_lvl);
     }
 
     /**
@@ -3097,8 +3107,8 @@ namespace smt {
         SASSERT(is_well_sorted(m, e));
         TRACE(begin_assert_expr, tout << mk_pp(e, m) << " " << mk_pp(pr, m) << "\n";);
         TRACE(begin_assert_expr_ll, tout << mk_ll_pp(e, m) << "\n";);
-        if (!m_searching)
-            pop_to_base_lvl();
+        // if (!m_searching)
+        //     pop_to_base_lvl();
         if (pr == nullptr)
             m_asserted_formulas.assert_expr(e);
         else
@@ -3412,17 +3422,17 @@ namespace smt {
             propagate();
             // Internal backtracking scopes (created with push_scope()) must only be created when we are
             // in a consistent context.
-            if (inconsistent())
-                return;
+            // if (inconsistent())  //! Removing this to make sure m_search_lvl = m_scope_lvl happens.
+            //     return;
             if (get_cancel_flag())
                 return;
             del_inactive_lemmas();
-            // push_scope();       //! Commenting this out is hacky but should be safe in the context of how Sundance uses Z3.
+            push_scope();       //! Commenting this out is hacky but should be safe in the context of how Sundance uses Z3.
             vector<std::pair<expr*,expr_ref>> asm2proxy;
             internalize_proxies(asms, asm2proxy);
             for (auto const& p: asm2proxy) {
-                if (inconsistent())
-                    break;
+                // No break on inconsistent(): a conflict left over from the previous check still needs
+                // every tracker registered, or the unsat core comes out empty.
                 expr_ref curr_assumption = p.second;
                 expr* orig_assumption = p.first;
                 if (m.is_true(curr_assumption)) continue;
@@ -3443,8 +3453,8 @@ namespace smt {
             }
         }
         m_search_lvl = m_scope_lvl;
-        // SASSERT(asms.empty() || m_search_lvl > m_base_lvl);
-        SASSERT(!asms.empty() || m_search_lvl == m_base_lvl);
+        SASSERT(asms.empty() || m_search_lvl > m_base_lvl);
+        SASSERT(!asms.empty() || m_search_lvl >= m_base_lvl);
         TRACE(after_internalization, display(tout););
     }
 
@@ -3492,7 +3502,7 @@ namespace smt {
         }
         reset_assumptions();
         // pop_to_base_lvl(); // undo the push_scope() performed by init_assumptions
-        m_search_lvl = m_base_lvl;
+        // m_search_lvl = m_base_lvl;
         std::sort(m_unsat_core.data(), m_unsat_core.data() + m_unsat_core.size(), ast_lt_proc());
         TRACE(unsat_core_bug, tout << "unsat core:\n" << m_unsat_core << "\n";);
         validate_unsat_core();
@@ -3521,7 +3531,7 @@ namespace smt {
         reset_tmp_clauses();
         m_unsat_core.reset();
         m_stats.m_num_checks++;
-        pop_to_base_lvl();      
+        // pop_to_base_lvl();
         m_conflict_resolution->reset();
         return true;
     }
@@ -3706,7 +3716,7 @@ namespace smt {
 
     lbool context::check(unsigned num_assumptions, expr * const * assumptions, bool reset_cancel) {
         if (!check_preamble(reset_cancel)) return l_undef;
-        SASSERT(at_base_level());
+        // SASSERT(at_base_level());
         setup_context(false);
         search_completion sc(*this);
         if (m_fparams.m_threads > 1 && !m.has_trace_stream()) {            
@@ -3716,7 +3726,7 @@ namespace smt {
         }
         lbool r = l_undef;
         do {
-            pop_to_base_lvl();
+            // pop_to_base_lvl();
             expr_ref_vector asms(m, num_assumptions, assumptions);
             try {
                 internalize_assertions();
@@ -3742,7 +3752,7 @@ namespace smt {
         lbool r = l_undef;
         search_completion sc(*this);
         do {
-            pop_to_base_lvl();
+            // pop_to_base_lvl();
             expr_ref_vector asms(cube);
             try {
                 internalize_assertions();

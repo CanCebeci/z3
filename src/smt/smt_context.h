@@ -533,7 +533,7 @@ namespace smt {
         }
 
         bool tracking_assumptions() const {
-            return !m_assumptions.empty(); // && m_search_lvl > m_base_lvl;
+            return !m_assumptions.empty() && m_search_lvl > m_base_lvl;
         }
 
         expr * bool_var2expr(bool_var v) const {
@@ -669,6 +669,7 @@ namespace smt {
             unsigned                m_units_to_reassert_lim;
         };
         struct base_scope {
+            unsigned                m_scope_lvl;  // scope level opened by the user push (m_base_lvl stays 0 in Sundance)
             unsigned                m_lemmas_lim;
             unsigned                m_simp_qhead_lim;
             unsigned                m_inconsistent;
