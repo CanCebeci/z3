@@ -1485,8 +1485,84 @@ namespace {
             return "`" + printed(v) + "`";
         }
 
-        // The Boolean variable whose atom prints as `term`; an unassigned one if there are several.
+        // The Boolean variable whose atom prints as `term`, or as the term Z3 rewrote it to;
+        // an unassigned one if there are several.
         bool_var find_var(std::string const & term) {
+            bool_var v = find_printed(term);
+            if (v != null_bool_var)
+                return v;
+            // E.g. the trace decides an input quantifier whose body Z3's rewriter changed
+            read_rewrites();
+            std::string t = term;
+            for (unsigned steps = 0; steps < 16; ++steps) {
+                auto it = m_rewrites.find(t);
+                if (it == m_rewrites.end())
+                    break;
+                t = it->second;
+                v = find_printed(t);
+                if (v != null_bool_var)
+                    return v;
+            }
+            return null_bool_var;
+        }
+
+        // Rewrites Z3 reported so far (`[eq] <original> <rewritten>`), by original
+        std::unordered_map<std::string, std::string> m_rewrites;
+        size_t m_rewrite_log_pos = 0;
+
+        // The end of the term starting at s[i] (an atom or a parenthesized term), or npos
+        static size_t term_end(std::string const & s, size_t i) {
+            if (i >= s.size())
+                return std::string::npos;
+            if (s[i] != '(') {
+                while (i < s.size() && s[i] != ' ' && s[i] != ')' && s[i] != '\n') {
+                    if (s[i] == '|')
+                        i = s.find('|', i + 1);
+                    if (i == std::string::npos)
+                        return i;
+                    ++i;
+                }
+                return i;
+            }
+            unsigned depth = 0;
+            for (; i < s.size(); ++i) {
+                char c = s[i];
+                if (c == '|' || c == '"') {
+                    i = s.find(c, i + 1);
+                    if (i == std::string::npos)
+                        return i;
+                }
+                else if (c == '(')
+                    ++depth;
+                else if (c == ')' && --depth == 0)
+                    return i + 1;
+            }
+            return std::string::npos;
+        }
+
+        // Record the rewrites logged since the last call
+        void read_rewrites() {
+            std::string const & log = m_context.replay_rewrite_log();
+            while (true) {
+                size_t eol = log.find('\n', m_rewrite_log_pos);
+                if (eol == std::string::npos)
+                    break;
+                std::string line = log.substr(m_rewrite_log_pos, eol - m_rewrite_log_pos);
+                m_rewrite_log_pos = eol + 1;
+                if (line.compare(0, 5, "[eq] ") != 0)
+                    continue;
+                size_t lhs_end = term_end(line, 5);
+                if (lhs_end == std::string::npos || lhs_end + 1 >= line.size())
+                    continue;
+                size_t rhs_end = term_end(line, lhs_end + 1);
+                if (rhs_end == std::string::npos)
+                    continue;
+                m_rewrites[line.substr(5, lhs_end - 5)] = line.substr(lhs_end + 1, rhs_end - lhs_end - 1);
+            }
+        }
+
+        // The Boolean variable whose atom prints as `term`; an unassigned one if there are several.
+        bool_var find_printed(std::string const & term) {
             unsigned n = m_context.get_num_bool_vars();
             for (bool_var v = 0; v < n; ++v)
                 printed(v);

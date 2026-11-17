@@ -54,6 +54,8 @@ Revision History:
 #include "solver/progress_callback.h"
 #include "solver/assertions/asserted_formulas.h"
 #include <tuple>
+#include <memory>
+#include <streambuf>
 
 // there is a significant space overhead with allocating 1000+ contexts in
 // the case that each context only references a few expressions.
@@ -319,6 +321,15 @@ namespace smt {
 
         // Point the rewriters' [eq] events at the trace, or turn them off
         void update_planner_trace();
+
+        // With planner replay, the rewrite trace: `[eq] <original> <rewritten>` events, by
+        // which the replay finds atoms that Z3 rewrote
+        std::string const & replay_rewrite_log() const { return m_replay_rewrite_log; }
+    protected:
+        std::string                     m_replay_rewrite_log;
+        std::unique_ptr<std::streambuf> m_replay_rewrite_buf;
+        std::unique_ptr<std::ostream>   m_replay_rewrite_stream;
+    public:
 
         params_ref const & get_params() {
             return m_params;

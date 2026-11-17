@@ -131,14 +131,46 @@ namespace smt {
         update_planner_trace();
     }
 
+    namespace {
+        // Appends what is written to a string, echoing it to another stream buffer if any
+        class log_streambuf : public std::streambuf {
+            std::string &    m_log;
+            std::streambuf * m_echo;
+        public:
+            log_streambuf(std::string & log, std::streambuf * echo): m_log(log), m_echo(echo) {}
+        protected:
+            int overflow(int c) override {
+                if (c != traits_type::eof()) {
+                    m_log.push_back(static_cast<char>(c));
+                    if (m_echo)
+                        m_echo->sputc(static_cast<char>(c));
+                }
+                return c;
+            }
+            std::streamsize xsputn(char const * s, std::streamsize n) override {
+                m_log.append(s, static_cast<size_t>(n));
+                if (m_echo)
+                    m_echo->sputn(s, n);
+                return n;
+            }
+        };
+    }
+
     void context::update_planner_trace() {
         std::ostream * out = planner_trace() ? &std::cerr : nullptr;
+        if (planner_replay()) {
+            // Log rewrites for the replay (echoing them when tracing)
+            m_replay_rewrite_buf = std::make_unique<log_streambuf>(
+                m_replay_rewrite_log, out ? std::cerr.rdbuf() : nullptr);
+            m_replay_rewrite_stream = std::make_unique<std::ostream>(m_replay_rewrite_buf.get());
+            out = m_replay_rewrite_stream.get();
+        }
         m_rewriter.set_eq_trace(out);
         m_asserted_formulas.set_planner_trace(out);
         // Traces are meant to be produced in this configuration; in particular,
         // [eq] events do not cover rewrites made by the tactic pipeline.
         static bool s_warned = false;
-        if (out && !s_warned &&
+        if (planner_trace() && !s_warned &&
             (tactic_params().default_tactic() != "smt" || m_fparams.m_reduce_assertions)) {
             s_warned = true;
             warning_msg("smt.planner_trace=true expects tactic.default_tactic=smt and smt.reduce_assertions=false");
