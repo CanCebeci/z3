@@ -91,6 +91,7 @@ namespace smt {
         */
         void insert(fingerprint * f, app * pat, unsigned generation, unsigned min_top_generation, unsigned max_top_generation, bool mbqi_instance = false);
         void instantiate();
+        void planner_trace_match(char const * tag, fingerprint * f, unsigned generation, float cost);
         bool has_work() const { return !m_new_entries.empty(); }
         void init_search_eh();
         bool final_check_eh();

@@ -1743,6 +1743,12 @@ namespace smt {
             }
         }
         TRACE(propagate_relevancy, tout << "marking as relevant:\n" << mk_bounded_pp(n, m) << " " << m_scope_lvl << "\n";);
+        if (planner_trace() && m_fparams.m_trace_relevancy) {
+            planner_trace_printer pp(std::cerr);
+            std::cerr << "[relevant] ";
+            pp.display(n);
+            std::cerr << "; level=" << m_scope_lvl << " #" << n->get_id() << "\n";
+        }
         m_case_split_queue->relevant_eh(n);
 
         if (is_app(n)) {
@@ -2089,7 +2095,10 @@ namespace smt {
         pp.display(bool_var2expr(l.var()));
         if (l.sign())
             out << ")";
-        out << "; level=" << m_scope_lvl << " " << l << "\n";
+        out << "; level=" << m_scope_lvl << " " << l;
+        if (m_fparams.m_trace_relevancy && relevancy())
+            out << " relevant=" << is_relevant(l.var());
+        out << "\n";
     }
 
     /**

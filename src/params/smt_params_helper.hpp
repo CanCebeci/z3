@@ -233,6 +233,7 @@ Abstract:
   UINT_  (dt_lazy_splits,                          "dt_lazy_splits",                          1,                        "How lazy datatype splits are performed: 0- eager, 1- lazy for infinite types, 2- lazy") \
   BOOL_  (qsat_use_qel,                            "qsat_use_qel",                            true,                     "Use QEL for lite quantifier elimination and model-based projection in QSAT") \
   BOOL_  (planner_trace,                           "planner_trace",                           false,                    "print decisions and quantifier instances to stderr in the standard solver tracing format") \
+  BOOL_  (trace_relevancy,                         "trace_relevancy",                         false,                    "with planner_trace, print `[relevant] <term>` whenever a term becomes relevant, and the relevancy of each decided atom") \
   STRING_(planner_replay,                          "planner_replay",                          "",                       "planner trace file whose [decide] and [backtrack] events are replayed and validated by case_split=7") \
   STRING_(planner_replay_egraph,                   "planner_replay_egraph",                   "",                       "file to dump the e-graph (equivalence classes) to when the replay of case_split=7 fails") \
   BOOL_  (reduce_assertions,                       "reduce_assertions",                       true,                     "Enable reduction of asserted formulas before internalization")

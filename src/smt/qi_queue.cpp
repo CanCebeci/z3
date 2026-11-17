@@ -145,7 +145,22 @@ namespace smt {
               }
               tout << "\n";);
         TRACE(new_entries_bug, tout << "[qi:insert]\n";);
+        if (m_context.planner_trace() && m_context.get_fparams().m_trace_relevancy)
+            planner_trace_match("[match] ", f, generation, cost);
         m_new_entries.push_back(entry(f, cost, generation, mbqi_instance));
+    }
+
+    // With smt.trace_relevancy: `<tag><quantifier> <binding>*; gen=G cost=C level=L`
+    void qi_queue::planner_trace_match(char const * tag, fingerprint * f, unsigned generation, float cost) {
+        std::ostream & out = std::cerr;
+        planner_trace_printer pp(out);
+        out << tag;
+        pp.display(static_cast<quantifier*>(f->get_data()));
+        for (unsigned i = 0; i < f->get_num_args(); ++i) {
+            out << " ";
+            pp.display(f->get_arg(i)->get_expr());
+        }
+        out << "; gen=" << generation << " cost=" << cost << " level=" << m_context.get_scope_level() << "\n";
     }
 
     void qi_queue::instantiate() {
@@ -172,6 +187,8 @@ namespace smt {
             }
             else {
                 TRACE(qi_queue, tout << "delaying quantifier instantiation... " << f << "\n" << mk_pp(qa, m) << "\ncost: " << curr.m_cost << "\n";);
+                if (m_context.planner_trace() && m_context.get_fparams().m_trace_relevancy)
+                    planner_trace_match("[delay] ", f, curr.m_generation, curr.m_cost);
                 m_delayed_entries.push_back(curr);
             }
 
@@ -218,6 +235,8 @@ namespace smt {
 
         if (m_checker.is_sat(q->get_expr(), num_bindings, bindings)) {
             TRACE(checker, tout << "instance already satisfied\n";);
+            if (m_context.planner_trace() && m_context.get_fparams().m_trace_relevancy)
+                planner_trace_match("[satisfied] ", f, generation, ent.m_cost);
             // we log the "dummy" instantiations separately from "instance"
             STRACE(dummy, tout << "### " << static_cast<void*>(f) <<", " << q->get_qid() << "\n";);
             STRACE(dummy, tout << "Instance already satisfied (dummy)\n";);
