@@ -234,6 +234,7 @@ Abstract:
   BOOL_  (qsat_use_qel,                            "qsat_use_qel",                            true,                     "Use QEL for lite quantifier elimination and model-based projection in QSAT") \
   BOOL_  (planner_trace,                           "planner_trace",                           false,                    "print decisions and quantifier instances to stderr in the standard solver tracing format") \
   STRING_(planner_replay,                          "planner_replay",                          "",                       "planner trace file whose [decide] and [backtrack] events are replayed and validated by case_split=7") \
+  STRING_(planner_replay_egraph,                   "planner_replay_egraph",                   "",                       "file to dump the e-graph (equivalence classes) to when the replay of case_split=7 fails") \
   BOOL_  (reduce_assertions,                       "reduce_assertions",                       true,                     "Enable reduction of asserted formulas before internalization")
 
 Z3_DEFINE_MODULE_PARAMS(smt_params_helper, "smt", SMT_PARAMS_HELPER_LIST, "smt solver based on lazy smt");

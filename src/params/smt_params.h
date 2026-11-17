@@ -227,6 +227,7 @@ struct smt_params : public preprocessor_params,
     bool             m_core_validate = false;
     bool             m_planner_trace = false;
     std::string      m_planner_replay;      // planner trace file replayed by case_split=7
+    std::string      m_planner_replay_egraph; // file the e-graph is dumped to when the replay fails
     bool             m_reduce_assertions = true;
 
     // -----------------------------------

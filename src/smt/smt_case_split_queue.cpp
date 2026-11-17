@@ -22,6 +22,7 @@ Revision History:
 #include "util/stopwatch.h"
 #include "ast/for_each_expr.h"
 #include "ast/ast_pp.h"
+#include "ast/ast_ll_pp.h"
 #include "util/map.h"
 #include "util/hashtable.h"
 #include "util/z3_exception.h"
@@ -1320,7 +1321,45 @@ namespace {
         // It is also printed, as the reason is easily missed.
         [[noreturn]] void fail(std::string const & msg) {
             std::cerr << "planner replay error: " << msg << std::endl;
+            dump_egraph(msg);
             throw default_exception("planner replay: " + msg);
+        }
+
+        // Dumps the equivalence classes in the format of the dump-egraph-on-failure
+        // instrumentation: a root `#id: term` per class, followed by its other members
+        // indented, each term printed to depth 1 (applications as `#id` references).
+        void dump_egraph(std::string const & msg) {
+            std::string const & file = m_params.m_planner_replay_egraph;
+            if (file.empty())
+                return;
+            std::ofstream out(file);
+            if (!out) {
+                std::cerr << "planner replay: cannot open " << file << std::endl;
+                return;
+            }
+            ast_manager & m = m_context.get_manager();
+            auto pp = [&](enode * n) { out << n->get_owner_id() << ": " << mk_bounded_pp(n->get_expr(), m, 1) << "\n"; };
+            out << "; planner replay error: " << msg << "\n";
+            out << "; scope level " << m_context.get_scope_level()
+                << ", search level " << m_context.get_search_level() << "\n";
+            out << "; Dumping egraph\n";
+            unsigned count = 0;
+            for (enode * r : m_context.enodes())
+                if (r->is_root())
+                    ++count;
+            out << "equivalence classes: " << count << "\n";
+            for (enode * r : m_context.enodes()) {
+                if (!r->is_root())
+                    continue;
+                out << "#";
+                pp(r);
+                for (enode * n : *r)
+                    if (n != r) {
+                        out << "   #";
+                        pp(n);
+                    }
+            }
+            std::cerr << "planner replay: e-graph dumped to " << file << std::endl;
         }
 
         std::string at(event const & e) const {
