@@ -103,8 +103,8 @@ namespace smt {
         return display_literals_verbose(out, 1, &lit);
     }
 
-    std::ostream& context::display_literals_verbose(std::ostream & out, unsigned num_lits, literal const * lits) const {
-        display_verbose(out, m, num_lits, lits, m_bool_var2expr.data(), "\n"); return out;
+    std::ostream& context::display_literals_verbose(std::ostream & out, unsigned num_lits, literal const * lits, bool full) const {
+        display_verbose(out, m, num_lits, lits, m_bool_var2expr.data(), "\n", full); return out;
     }
 
     std::ostream& context::display_literal_smt2(std::ostream& out, literal l) const {
@@ -683,18 +683,20 @@ namespace smt {
         SASSERT(m.has_trace_stream());
         std::ostream & out = m.trace_stream();
         ast_manager::suspend_trace _st(m);
-        out << "[assign] ";
+        out << "[assign] " << l << " ";
         display_literal(out, l);
         if (decision)
             out << " decision";
         out << " ";
         display_compact_j(out, j);
+        smt::display(out, l, m, m_bool_var2expr.data(), true);
+        out << "\n";
     }
 
     std::ostream& operator<<(std::ostream& out, enode_pp const& p) {
         ast_manager& m = p.ctx.get_manager();
         enode* n = p.n;
-        return out << n->get_owner_id() << ": " << mk_bounded_pp(n->get_expr(), m);
+        return out << n->get_owner_id() << ": " << mk_bounded_pp(n->get_expr(), m, 1);
     }
 
     std::ostream& operator<<(std::ostream& out, enode_eq_pp const& p) {

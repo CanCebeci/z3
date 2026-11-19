@@ -241,6 +241,7 @@ namespace smt {
              quantifier * q, app * pat,
              unsigned num_bindings,
              enode * const * bindings,
+               unsigned max_generation,
              vector<std::tuple<enode *, enode *>> & used_enodes) {
 
             if (pat == nullptr) {
@@ -265,22 +266,28 @@ namespace smt {
                     }
                 }
                 // At this point all relevant equalities for the match are logged.
-                out << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id();
+                out << "[new-match] " << f->get_data_hash() << " #" << q->get_id() << " #" << pat->get_id() << " "<< q->get_qid();
                 for (unsigned i = 0; i < num_bindings; ++i) {
                     // I don't want to use mk_pp because it creates expressions for pretty printing.
                     // This nasty side-effect may change the behavior of Z3.
                     out << " #" << bindings[num_bindings - i - 1]->get_owner_id();
                 }
-                out << " ;";
+                out << " ; gen " << max_generation;
+                out << "\n";
                 for (auto n : used_enodes) {
                     enode *orig = std::get<0>(n);
                     enode *substituted = std::get<1>(n);
-                    if (orig == nullptr)
-                        out << " #" << substituted->get_owner_id();
-                    else {
-                        out << " (#" << orig->get_owner_id() << " #" << substituted->get_owner_id() << ")";
+                    if (orig == nullptr) {
+                        out << " #" << substituted->get_owner_id()<< ": ";
+                        out <<  mk_bounded_pp(substituted->get_expr(), m(), -1) << "\n";
+                    } else {
+                        out << " (#" << orig->get_owner_id() << ": ";
+                        out << mk_bounded_pp(orig->get_expr(), m(), -1) << " ";
+                        out << " #" << substituted->get_owner_id() << ": "; 
+                        out << mk_bounded_pp(substituted->get_expr(), m(), -1) << ")\n";
                     }
                 }
+                out << " ;";
                 out << "\n";
             }
         }
@@ -311,7 +318,7 @@ namespace smt {
                     log_causality(f,pat,used_enodes);
                 }
                 if (has_trace_stream()) {
-                    log_add_instance(f, q, pat, num_bindings, bindings, used_enodes);
+                    log_add_instance(f, q, pat, num_bindings, bindings, max_generation, used_enodes);
                 }
                 m_qi_queue.insert(f, pat, max_generation, min_top_generation, max_top_generation); // TODO
                 m_num_instances++;
