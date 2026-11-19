@@ -1137,6 +1137,15 @@ namespace smt {
         if (m.has_trace_stream())
             m.trace_stream() << "[attach-enode] #" << n->get_id() << " " << generation << "\n";        
 
+        // Very inefficient but will do for now
+        for (expr* l : m_cgr_listeners) {
+            smt::enode* n = find_enode_rec(l);
+            if (n == e->get_cg_or_const()) {
+                std::cout << "enode congruent to " << mk_bounded_pp(l, m, -1) << ":\n\t#" << e->get_owner_id() << " gen " << generation << ": " << mk_bounded_pp(e->get_expr(), m, -1) << "\n";
+            }
+        }
+
+
         return e;
     }
 

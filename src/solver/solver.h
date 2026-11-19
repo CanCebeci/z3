@@ -26,6 +26,8 @@ Notes:
 
 class solver;
 class model_converter;
+class sexpr;
+class sexpr;
 
 
 
@@ -273,6 +275,21 @@ public:
        \brief expose explanation for congruence.
     */
     virtual expr_ref congruence_explain(expr* a, expr* b) = 0;
+
+    /**
+       \brief print congruence closure root at the time of failure.
+    */
+    virtual void get_cgr_on_failure(sexpr* e);
+
+    /**
+       \brief add congruence-root listener.
+    */
+    virtual void add_cgr_listener(expr* e);
+
+    /**
+       \brief enable/disable e-graph dump at the time of failure.
+    */
+    virtual void dump_egraph_on_failure(bool enable);
 
     struct solution {
         expr* var;

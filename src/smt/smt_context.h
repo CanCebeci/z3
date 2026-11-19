@@ -53,6 +53,8 @@ Revision History:
 #include "model/model.h"
 #include "solver/progress_callback.h"
 #include "solver/assertions/asserted_formulas.h"
+#include "util/sexpr.h"
+#include "util/sexpr.h"
 #include <tuple>
 
 // there is a significant space overhead with allocating 1000+ contexts in
@@ -270,6 +272,15 @@ namespace smt {
         vector<literal_vector> m_th_case_split_sets;
         u_map< vector<literal_vector> > m_literal2casesplitsets; // returns the case split literal sets that a literal participates in
 
+        // -----------------------------------
+        //
+        // Debugging
+        //
+        // -----------------------------------
+        sexpr_manager              m_cgr_on_failure_sm;
+        sexpr_ref_vector           m_cgr_on_failure_todo;
+        expr_ref_vector            m_cgr_listeners;
+        bool                       m_dump_egraph_on_failure = false;
 
         // ----------------------------------
         //
@@ -340,6 +351,14 @@ namespace smt {
         enode * find_enode(expr const * n) const {
             return m_app2enode.get(n->get_id(), 0);
         }
+
+        enode* find_enode_rec(expr* e);
+        void print_cgr(expr* e);
+        expr* sexpr_to_expr(sexpr* s);
+
+        void get_cgr_on_failure(sexpr * e);
+        void add_cgr_listener(expr* e);
+        void dump_egraph_on_failure(bool enable);
 
         void reset_bool_vars() {
             m_expr2bool_var.reset();
@@ -1701,6 +1720,7 @@ namespace smt {
         void display_partial_assignment(std::ostream& out, expr_ref_vector const& asms, unsigned min_core_size);
 
         void log_stats();
+        void print_on_failure_logs();
 
         void copy_user_propagator(context& src, bool copy_registered);
 
