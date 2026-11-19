@@ -3385,7 +3385,8 @@ namespace smt {
         timeit tt(get_verbosity_level() >= 100, "smt.preprocessing");
         unsigned qhead = 0;
         do {
-            reduce_assertions();
+            if (m_fparams.m_reduce_assertions)
+                reduce_assertions();
             if (get_cancel_flag()) 
                 return;
             if (m_asserted_formulas.inconsistent()) {
@@ -4116,6 +4117,31 @@ namespace smt {
         }
     }
 
+    void context::dump_assignments() {
+        auto &out = std::cout;
+
+        // Print declarations
+        ast_pp_util visitor(m);
+        for (literal lit : m_assigned_literals) {
+            visitor.collect(bool_var2expr(lit.var()));
+        }
+        visitor.display_decls(out);
+
+
+        out << "; Dumping assignments\n";
+        for (literal lit : m_assigned_literals) {
+            out << "; " << lit << " (" << (lit.sign()?"not ":"") << "#" <<  bool_var2expr(lit.var())->get_id() << ")\n";
+            bool negate= lit.sign();
+            out << "(assert ";
+            if (negate)
+                out << "(not ";
+            out << mk_pp(bool_var2expr(lit.var()), m);
+            if (negate)
+                out << ")";
+            out << ")\n";
+        }
+    }
+
     lbool context::bounded_search() {
         unsigned counter = 0;
 
@@ -4186,6 +4212,13 @@ namespace smt {
                     log_stats();
                     if (m.has_trace_stream()) {
                         m.trace_stream() << "[found-model]\n";
+                    }
+                    if (m_fparams.m_dump_assignments) {
+                        dump_assignments();
+                    }
+                    if (m_fparams.m_dump_egraph) {
+                        std::cout << "; Dumping egraph\n";
+                        display_eqc(std::cout);
                     }
                     return l_true;
                 case FC_CONTINUE:
@@ -4894,7 +4927,8 @@ namespace smt {
             m_proto_model = m_model_generator->mk_model();
             m_qmanager->adjust_model(m_proto_model.get());
             TRACE(mbqi_bug, tout << "before complete_partial_funcs:\n"; model_pp(tout, *m_proto_model););
-            m_proto_model->complete_partial_funcs(false);
+            if (m_fparams.m_complete_partial_funcs)
+                m_proto_model->complete_partial_funcs(false);
             TRACE(mbqi_bug, tout << "before cleanup:\n"; model_pp(tout, *m_proto_model););
             m_proto_model->cleanup();
             TRACE(mbqi_bug, tout << "after cleanup:\n"; model_pp(tout, *m_proto_model););

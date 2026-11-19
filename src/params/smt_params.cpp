@@ -57,6 +57,7 @@ void smt_params::updt_local_params(params_ref const & _p) {
     m_logic = _p.get_sym("logic", m_logic);
     m_string_solver = p.string_solver();
     m_up_persist_clauses = p.up_persist_clauses();
+    m_complete_partial_funcs = p.complete_partial_funcs();
     validate_string_solver(m_string_solver);
     if (_p.get_bool("arith.greatest_error_pivot", false))
         m_arith_pivot_strategy = arith_pivot_strategy::ARITH_PIVOT_GREATEST_ERROR;
@@ -71,7 +72,9 @@ void smt_params::updt_local_params(params_ref const & _p) {
     m_lemmas2console = sp.lemmas2console();
     m_instantiations2console = sp.instantiations2console();
     m_proof_log = sp.proof_log();
-    
+    m_reduce_assertions = p.reduce_assertions();
+    m_dump_assignments = p.dump_assignments();
+    m_dump_egraph = p.dump_egraph();
 }
 
 void smt_params::updt_params(params_ref const & p) {
@@ -133,6 +136,7 @@ void smt_params::display(std::ostream & out) const {
     DISPLAY_PARAM(m_induction);
     DISPLAY_PARAM(m_clause_proof);
     DISPLAY_PARAM(m_proof_log);
+    DISPLAY_PARAM(m_reduce_assertions);
 
     DISPLAY_PARAM(m_case_split_strategy);
     DISPLAY_PARAM(m_rel_case_split_order);
