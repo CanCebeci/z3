@@ -628,6 +628,19 @@ func_decl * decl_plugin::mk_func_decl(decl_kind k, unsigned num_parameters, para
     return mk_func_decl(k, num_parameters, parameters, num_args, sorts.data(), range);
 }
 
+
+func_decl * ast_manager::find_func_decl(symbol const & name, unsigned arity, sort * const * domain, sort * range, func_decl_info * info) {
+    unsigned sz               = func_decl::get_obj_size(arity);
+    void * mem                = allocate_node(sz);
+
+    func_decl* new_node = new (mem) func_decl(name, arity, domain, range, info);
+    new_node->m_hash = get_node_hash(new_node);
+    ast* res = nullptr;
+    bool found = m_ast_table.find(new_node, res);
+    deallocate_node(new_node, sz);
+    return found ? to_func_decl(res) : nullptr;
+}
+
 // -----------------------------------
 //
 // basic_decl_plugin (i.e., builtin plugin)
